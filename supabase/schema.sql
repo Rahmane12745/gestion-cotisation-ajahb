@@ -54,68 +54,12 @@ CREATE INDEX IF NOT EXISTS idx_paiements_date ON public.paiements(date_paiement 
 
 -- ====================================================================
 -- SÉCURITÉ ROW LEVEL SECURITY (RLS)
+-- Désactivé pour autoriser l'API frontend de l'application
 -- ====================================================================
 
-ALTER TABLE public.utilisateurs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.membres ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.paiements ENABLE ROW LEVEL SECURITY;
-
--- Helper function pour obtenir le rôle de l'utilisateur connecté via Supabase Auth
-CREATE OR REPLACE FUNCTION public.get_user_role()
-RETURNS TEXT AS $$
-  SELECT role FROM public.utilisateurs WHERE email = auth.email() LIMIT 1;
-$$ LANGUAGE sql SECURITY DEFINER;
-
--- Politiques pour la table 'utilisateurs' :
--- Tout utilisateur connecté peut lire les profils
-CREATE POLICY "Lecture utilisateurs pour membres connectés"
-    ON public.utilisateurs FOR SELECT
-    USING (auth.role() = 'authenticated');
-
--- Seul l'admin peut créer, modifier ou supprimer des utilisateurs
-CREATE POLICY "Gestion utilisateurs réservée aux admins"
-    ON public.utilisateurs FOR ALL
-    USING (public.get_user_role() = 'admin');
-
--- Politiques pour la table 'membres' :
--- Tous les rôles connectés peuvent consulter les membres
-CREATE POLICY "Lecture membres pour tous"
-    ON public.membres FOR SELECT
-    USING (auth.role() = 'authenticated');
-
--- Admin et Trésorier peuvent insérer ou modifier des membres
-CREATE POLICY "Modification membres pour admin et trésorier"
-    ON public.membres FOR INSERT
-    WITH CHECK (public.get_user_role() IN ('admin', 'tresorier'));
-
-CREATE POLICY "Mise à jour membres pour admin et trésorier"
-    ON public.membres FOR UPDATE
-    USING (public.get_user_role() IN ('admin', 'tresorier'));
-
--- Seul l'admin peut supprimer un membre
-CREATE POLICY "Suppression membres réservée à l'admin"
-    ON public.membres FOR DELETE
-    USING (public.get_user_role() = 'admin');
-
--- Politiques pour la table 'paiements' :
--- Tous les rôles peuvent consulter l'historique des paiements
-CREATE POLICY "Lecture paiements pour tous"
-    ON public.paiements FOR SELECT
-    USING (auth.role() = 'authenticated');
-
--- Admin et Trésorier peuvent enregistrer des paiements
-CREATE POLICY "Enregistrement paiements pour admin et trésorier"
-    ON public.paiements FOR INSERT
-    WITH CHECK (public.get_user_role() IN ('admin', 'tresorier'));
-
--- Seul l'admin peut supprimer ou modifier un paiement existant (intégrité comptable)
-CREATE POLICY "Modification suppression paiements réservée à l'admin"
-    ON public.paiements FOR UPDATE
-    USING (public.get_user_role() = 'admin');
-
-CREATE POLICY "Suppression paiements réservée à l'admin"
-    ON public.paiements FOR DELETE
-    USING (public.get_user_role() = 'admin');
+ALTER TABLE public.utilisateurs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.membres DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.paiements DISABLE ROW LEVEL SECURITY;
 
 -- ====================================================================
 -- DONNÉES INITIALES DE DÉMARRAGE (3 COMPTES PAR DÉFAUT)
