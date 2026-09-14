@@ -20,7 +20,7 @@ const CATEGORIES_DEPENSES = [
 ];
 
 export const DepenseModal: React.FC<DepenseModalProps> = ({ isOpen, onClose }) => {
-  const { addDepense } = useData();
+  const { addDepense, stats, devise } = useData();
   const { currentUser } = useAuth();
 
   const [motif, setMotif] = useState('');
@@ -48,6 +48,11 @@ export const DepenseModal: React.FC<DepenseModalProps> = ({ isOpen, onClose }) =
 
     if (!motif.trim() || !montant || Number(montant) <= 0) {
       setError('Veuillez renseigner le motif et un montant valide.');
+      return;
+    }
+
+    if (Number(montant) > stats.soldeNetCaisse) {
+      setError(`Solde insuffisant en caisse ! Solde disponible : ${stats.soldeNetCaisse.toLocaleString('fr-FR')} ${devise}. Impossible d'effectuer une dépense supérieure au solde.`);
       return;
     }
 
@@ -93,8 +98,14 @@ export const DepenseModal: React.FC<DepenseModalProps> = ({ isOpen, onClose }) =
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Badge Solde Disponible */}
+          <div className="p-3 bg-emerald-50 border border-emerald-200/80 rounded-2xl flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-800">Solde actuel disponible en caisse :</span>
+            <span className="text-sm font-black text-emerald-900">{stats.soldeNetCaisse.toLocaleString('fr-FR')} {devise}</span>
+          </div>
+
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl font-medium">
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl font-semibold leading-relaxed">
               {error}
             </div>
           )}
@@ -128,6 +139,7 @@ export const DepenseModal: React.FC<DepenseModalProps> = ({ isOpen, onClose }) =
               required
             />
           </div>
+
 
           <div>
             <label className="text-xs font-black text-slate-700 block mb-1 uppercase tracking-wider">

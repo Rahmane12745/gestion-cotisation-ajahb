@@ -306,7 +306,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Enregistrer une dépense
+  // Enregistrer une dépense avec vérification du solde de caisse (style Wave)
   const addDepense = async (data: {
     motif: string;
     montant: number;
@@ -315,6 +315,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     remarque?: string;
   }) => {
     try {
+      if (data.montant > stats.soldeNetCaisse) {
+        return {
+          success: false,
+          error: `Solde insuffisant en caisse ! Le solde disponible est de ${stats.soldeNetCaisse.toLocaleString('fr-FR')} ${devise}. Impossible d'effectuer une dépense supérieure au solde.`,
+        };
+      }
+
       if (isSupabaseConfigured() && supabase) {
         const newDep = {
           motif: data.motif.trim(),
@@ -344,6 +351,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'Erreur réseau lors de la saisie de la dépense' };
     }
   };
+
 
   // Supprimer une dépense
   const deleteDepense = async (id: string) => {
