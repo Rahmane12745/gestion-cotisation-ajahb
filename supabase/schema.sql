@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
     email TEXT UNIQUE NOT NULL,
     nom TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('admin', 'tresorier', 'membre_bureau')),
+    mot_de_passe TEXT DEFAULT 'ajahb2026',
     actif BOOLEAN DEFAULT true,
     date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
@@ -117,8 +118,12 @@ CREATE POLICY "Suppression paiements réservée à l'admin"
     USING (public.get_user_role() = 'admin');
 
 -- ====================================================================
--- DONNÉES INITIALES DE DÉMARRAGE (ADMIN PAR DÉFAUT)
+-- DONNÉES INITIALES DE DÉMARRAGE (3 COMPTES PAR DÉFAUT)
 -- ====================================================================
-INSERT INTO public.utilisateurs (email, nom, role)
-VALUES ('admin@village.org', 'Administrateur Général', 'admin')
+-- Mots de passe par défaut : admin123, tresor123, bureau123
+INSERT INTO public.utilisateurs (email, nom, role, mot_de_passe, actif)
+VALUES 
+  ('admin@ajahb.org', 'Moussa Diallo (Président)', 'admin', 'admin123', true),
+  ('tresorier@ajahb.org', 'Amadou Sow (Trésorier)', 'tresorier', 'tresor123', true),
+  ('bureau@ajahb.org', 'Fatou Ndiaye (Secrétaire)', 'membre_bureau', 'bureau123', true)
 ON CONFLICT (email) DO NOTHING;

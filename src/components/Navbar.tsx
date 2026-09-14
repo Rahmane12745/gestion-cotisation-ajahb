@@ -12,8 +12,7 @@ import {
   Download,
   PlusCircle,
   Smartphone,
-  CheckCircle2,
-  AlertCircle
+  LogOut,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -37,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   deferredPrompt,
   onInstallPwa,
 }) => {
-  const { currentUser, role, users, loginAs, isDemoMode, canCollectPayments, canEditMembers, isAdmin } = useAuth();
+  const { role, canCollectPayments, canEditMembers, isAdmin, logout } = useAuth();
   const { nomVillage } = useData();
 
   const getRoleBadge = () => {
@@ -66,40 +65,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
-      {/* Top Banner for Demo & Role Switcher */}
-      {isDemoMode && (
-        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white px-4 py-1.5 text-xs">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="bg-emerald-500/30 text-emerald-200 font-bold px-2 py-0.5 rounded text-[11px] uppercase tracking-wider flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" /> Mode Démo & Local
-              </span>
-              <span className="hidden sm:inline text-emerald-100">
-                Vous pouvez tester tous les rôles instantanément :
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-emerald-200">Tester en tant que :</span>
-              <div className="flex items-center gap-1">
-                {users.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => loginAs(u)}
-                    className={`px-2 py-0.5 rounded transition-all font-medium ${
-                      currentUser?.id === u.id
-                        ? 'bg-white text-emerald-900 shadow-sm font-bold scale-105'
-                        : 'bg-emerald-900/40 text-emerald-100 hover:bg-emerald-900/70'
-                    }`}
-                  >
-                    {u.role === 'admin' ? '🛡️ Admin' : u.role === 'tresorier' ? '💰 Trésorier' : '👁️ Bureau'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
@@ -175,6 +140,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <ShieldCheck className="w-5 h-5 text-red-600" />
               </button>
             )}
+
+            {/* Logout button */}
+            <button
+              onClick={logout}
+              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-red-200"
+              title="Déconnexion"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </div>
 

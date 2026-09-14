@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
-import { ShieldCheck, Smartphone, Download } from 'lucide-react';
+import { ShieldCheck, Smartphone, Download, LogOut } from 'lucide-react';
 
 interface WaveHeaderProps {
   onOpenAdmin: () => void;
@@ -18,7 +18,7 @@ export const WaveHeader: React.FC<WaveHeaderProps> = ({
   deferredPrompt,
   onInstallPwa,
 }) => {
-  const { currentUser, role, users, loginAs, isDemoMode, isAdmin } = useAuth();
+  const { currentUser, role, isAdmin, logout } = useAuth();
   const { nomVillage } = useData();
 
   return (
@@ -33,11 +33,13 @@ export const WaveHeader: React.FC<WaveHeaderProps> = ({
             <h1 className="text-sm font-extrabold text-slate-900 leading-tight">
               {nomVillage}
             </h1>
-            <p className="text-[11px] text-slate-400 font-medium">Registre Numérique</p>
+            <p className="text-[11px] text-slate-400 font-medium truncate max-w-[120px]">
+              {currentUser?.nom || 'Registre Numérique'}
+            </p>
           </div>
         </div>
 
-        {/* Header Actions & Role Switcher */}
+        {/* Header Actions */}
         <div className="flex items-center gap-2">
           {deferredPrompt && (
             <button
@@ -52,31 +54,14 @@ export const WaveHeader: React.FC<WaveHeaderProps> = ({
           <button
             onClick={onOpenExport}
             className="p-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-            title="Exporter Bilan Excel / PDF"
+            title="Exporter Bilan PDF"
           >
             <Download className="w-4 h-4" />
           </button>
 
-          {isDemoMode ? (
-            <select
-              value={currentUser?.id}
-              onChange={(e) => {
-                const u = users.find((x) => x.id === e.target.value);
-                if (u) loginAs(u);
-              }}
-              className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 focus:outline-none cursor-pointer"
-            >
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.role === 'admin' ? '🛡️ Admin' : u.role === 'tresorier' ? '💰 Trésorier' : '👁️ Bureau'}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800">
-              {role === 'admin' ? 'Admin' : role === 'tresorier' ? 'Trésorier' : 'Bureau'}
-            </span>
-          )}
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            {role === 'admin' ? '🛡️ Admin' : role === 'tresorier' ? '💰 Trésorier' : '👁️ Bureau'}
+          </span>
 
           {isAdmin && (
             <button
@@ -84,9 +69,17 @@ export const WaveHeader: React.FC<WaveHeaderProps> = ({
               className="p-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200"
               title="Gérer les comptes et accès"
             >
-              <ShieldCheck className="w-4 h-4 text-red-600" />
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
             </button>
           )}
+
+          <button
+            onClick={logout}
+            className="p-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+            title="Déconnexion"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </header>

@@ -15,11 +15,12 @@ import { ExportModal } from '@/components/ExportModal';
 import { UsersAdminModal } from '@/components/UsersAdminModal';
 import { BroadcastModal } from '@/components/BroadcastModal';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
+import { LoginPage } from '@/components/LoginPage';
 import { MembreWithStats, Paiement } from '@/types';
 import { Home as HomeIcon, Users as UsersIcon, Receipt, Plus } from 'lucide-react';
 
 export default function Home() {
-  const { isDemoMode, isAdmin } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, loginWithEmail } = useAuth();
   const { membresWithStats } = useData();
 
   // Navigation tab: 'home' | 'membres' | 'journal'
@@ -92,6 +93,23 @@ export default function Home() {
     }
   };
 
+  // Écran de chargement initial
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0f172a]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-emerald-400">Chargement de l'application...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Écran de connexion si non authentifié
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={loginWithEmail} isLoading={authLoading} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0f172a] text-slate-900 font-sans selection:bg-emerald-500 selection:text-white">
       {/* Centered Mobile-first Shell with Desktop backdrop */}
@@ -105,7 +123,7 @@ export default function Home() {
         />
 
         {/* 2. Écran Principal */}
-        <main className="flex-1 w-full px-4 pt-4">
+        <main className="flex-1 w-full px-4 pt-4 pb-24">
           {activeTab === 'home' && (
             <WaveDashboard
               onOpenPayment={(id) => handleOpenPayment(id)}
