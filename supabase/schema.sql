@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
     date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
+ALTER TABLE public.utilisateurs ADD COLUMN IF NOT EXISTS mot_de_passe TEXT DEFAULT 'ajahb2026';
+
 -- 3. Séquence pour numéro matricule membre (ex: MBR-0001)
 CREATE SEQUENCE IF NOT EXISTS membre_seq START 1;
 
@@ -34,6 +36,10 @@ CREATE TABLE IF NOT EXISTS public.membres (
     actif BOOLEAN DEFAULT true,
     date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
+
+ALTER TABLE public.membres ADD COLUMN IF NOT EXISTS surnom TEXT;
+ALTER TABLE public.membres ADD COLUMN IF NOT EXISTS sanction TEXT;
+ALTER TABLE public.membres ADD COLUMN IF NOT EXISTS sanction_montant NUMERIC(12, 2) DEFAULT 0;
 
 -- 5. Table des PAIEMENTS (Cotisations)
 CREATE TABLE IF NOT EXISTS public.paiements (
@@ -93,4 +99,5 @@ VALUES
   ('tresorier@ajahb.org', 'Amadou Sow (Trésorier)', 'tresorier', 'tresor123', true),
   ('bureau@ajahb.org', 'Fatou Ndiaye (Secrétaire)', 'membre_bureau', 'bureau123', true)
 ON CONFLICT (email) DO NOTHING;
+
 
