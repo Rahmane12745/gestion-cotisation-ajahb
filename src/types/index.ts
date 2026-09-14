@@ -17,6 +17,8 @@ export interface Membre {
   telephone: string;
   quartier?: string;
   photo?: string;
+  sanction?: string;
+  sanction_montant?: number;
   actif: boolean;
   date_creation: string;
 }

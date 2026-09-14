@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS public.membres (
     telephone TEXT NOT NULL,
     quartier TEXT,
     photo TEXT,
+    sanction TEXT,
+    sanction_montant NUMERIC(12, 2) DEFAULT 0,
     actif BOOLEAN DEFAULT true,
     date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );

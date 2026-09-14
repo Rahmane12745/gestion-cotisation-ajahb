@@ -14,9 +14,10 @@ import { WaveReceiptModal } from '@/components/WaveReceiptModal';
 import { ExportModal } from '@/components/ExportModal';
 import { UsersAdminModal } from '@/components/UsersAdminModal';
 import { BroadcastModal } from '@/components/BroadcastModal';
+import { SanctionModal } from '@/components/SanctionModal';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 import { LoginPage } from '@/components/LoginPage';
-import { MembreWithStats, Paiement } from '@/types';
+import { MembreWithStats, Paiement, Membre } from '@/types';
 import { Home as HomeIcon, Users as UsersIcon, Receipt, Plus } from 'lucide-react';
 
 export default function Home() {
@@ -34,7 +35,11 @@ export default function Home() {
   const [paymentDefaultMemberId, setPaymentDefaultMemberId] = useState<string | null>(null);
   const [paymentDefaultMonth, setPaymentDefaultMonth] = useState<string | null>(null);
 
-  const [isNewMemberOpen, setIsNewMemberOpen] = useState(false);
+  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [memberToEdit, setMemberToEdit] = useState<Membre | null>(null);
+
+  const [isSanctionOpen, setIsSanctionOpen] = useState(false);
+  const [sanctionMember, setSanctionMember] = useState<Membre | null>(null);
 
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<Paiement | null>(null);
@@ -75,6 +80,21 @@ export default function Home() {
     setPaymentDefaultMemberId(memberId || null);
     setPaymentDefaultMonth(month || null);
     setIsPaymentOpen(true);
+  };
+
+  const handleOpenNewMember = () => {
+    setMemberToEdit(null);
+    setIsMemberModalOpen(true);
+  };
+
+  const handleEditMember = (m: Membre) => {
+    setMemberToEdit(m);
+    setIsMemberModalOpen(true);
+  };
+
+  const handleOpenSanction = (m: Membre) => {
+    setSanctionMember(m);
+    setIsSanctionOpen(true);
   };
 
   const handleViewReceipt = (paiement: Paiement) => {
@@ -136,7 +156,7 @@ export default function Home() {
           {activeTab === 'membres' && (
             <WaveMemberListTab
               onSelectMember={(m) => setSelectedMember(m)}
-              onOpenNewMember={() => setIsNewMemberOpen(true)}
+              onOpenNewMember={handleOpenNewMember}
             />
           )}
 
@@ -210,13 +230,15 @@ export default function Home() {
           </div>
         </nav>
 
-        {/* 4. Fiche détaillée du membre (12 mois + encaissement direct) */}
+        {/* 4. Fiche détaillée du membre (12 mois + encaissement direct + actions admin) */}
         {selectedMember && (
           <WaveMemberDetail
             membre={selectedMember}
             onClose={() => setSelectedMember(null)}
             onOpenPaymentForMonth={(membreId, mois) => handleOpenPayment(membreId, mois)}
             onViewReceipt={handleViewReceipt}
+            onEditMember={(m) => handleEditMember(m)}
+            onOpenSanction={(m) => handleOpenSanction(m)}
           />
         )}
 
@@ -230,8 +252,15 @@ export default function Home() {
         />
 
         <WaveMemberModal
-          isOpen={isNewMemberOpen}
-          onClose={() => setIsNewMemberOpen(false)}
+          isOpen={isMemberModalOpen}
+          onClose={() => setIsMemberModalOpen(false)}
+          memberToEdit={memberToEdit}
+        />
+
+        <SanctionModal
+          isOpen={isSanctionOpen}
+          onClose={() => setIsSanctionOpen(false)}
+          membre={sanctionMember}
         />
 
         <WaveReceiptModal

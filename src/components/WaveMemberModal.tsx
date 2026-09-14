@@ -2,18 +2,21 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useData } from '@/context/DataContext';
-import { UserPlus, X, Check, Camera, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Membre } from '@/types';
+import { UserPlus, UserCheck, X, Check, Camera, Trash2 } from 'lucide-react';
 
 interface WaveMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
+  memberToEdit?: Membre | null;
 }
 
 export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
   isOpen,
   onClose,
+  memberToEdit = null,
 }) => {
-  const { addMembre } = useData();
+  const { addMembre, updateMembre } = useData();
 
   const [nom, setNom] = useState('');
   const [surnom, setSurnom] = useState('');
@@ -27,14 +30,22 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setNom('');
-      setSurnom('');
-      setTelephone('');
-      setQuartier('');
-      setPhoto('');
+      if (memberToEdit) {
+        setNom(memberToEdit.nom || '');
+        setSurnom(memberToEdit.surnom || '');
+        setTelephone(memberToEdit.telephone || '');
+        setQuartier(memberToEdit.quartier || '');
+        setPhoto(memberToEdit.photo || '');
+      } else {
+        setNom('');
+        setSurnom('');
+        setTelephone('');
+        setQuartier('');
+        setPhoto('');
+      }
       setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, memberToEdit]);
 
   if (!isOpen) return null;
 
@@ -66,17 +77,31 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
     }
 
     setIsSubmitting(true);
-    const res = await addMembre({
-      nom: nom.trim(),
-      surnom: surnom.trim() || undefined,
-      telephone: telephone.trim(),
-      quartier: quartier.trim() || undefined,
-      photo: photo || undefined,
-    });
+
+    let res: { success: boolean; error?: string };
+
+    if (memberToEdit) {
+      res = await updateMembre(memberToEdit.id, {
+        nom: nom.trim(),
+        surnom: surnom.trim() || undefined,
+        telephone: telephone.trim(),
+        quartier: quartier.trim() || undefined,
+        photo: photo || undefined,
+      });
+    } else {
+      res = await addMembre({
+        nom: nom.trim(),
+        surnom: surnom.trim() || undefined,
+        telephone: telephone.trim(),
+        quartier: quartier.trim() || undefined,
+        photo: photo || undefined,
+      });
+    }
+
     setIsSubmitting(false);
 
     if (!res.success) {
-      setError(res.error || 'Erreur lors de l\'ajout.');
+      setError(res.error || 'Erreur lors de l\'enregistrement.');
       return;
     }
 
@@ -90,11 +115,15 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-              <UserPlus className="w-4 h-4" />
+              {memberToEdit ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
             </div>
             <div>
-              <h3 className="font-black text-base text-slate-900">Nouveau Membre</h3>
-              <p className="text-xs text-slate-500">Ajout avec photo & surnom</p>
+              <h3 className="font-black text-base text-slate-900">
+                {memberToEdit ? 'Modifier le Membre' : 'Nouveau Membre'}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {memberToEdit ? `Matricule ${memberToEdit.matricule}` : 'Ajout avec photo & surnom'}
+              </p>
             </div>
           </div>
           <button
@@ -218,7 +247,13 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
               className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
             >
               <Check className="w-5 h-5" />
-              <span>{isSubmitting ? 'Enregistrement...' : 'Enregistrer le membre'}</span>
+              <span>
+                {isSubmitting
+                  ? 'Enregistrement...'
+                  : memberToEdit
+                  ? 'Mettre à jour le membre'
+                  : 'Enregistrer le membre'}
+              </span>
             </button>
           </div>
         </form>

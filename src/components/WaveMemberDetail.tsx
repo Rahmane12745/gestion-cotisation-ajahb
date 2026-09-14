@@ -16,7 +16,9 @@ import {
   ArrowLeft,
   Camera,
   Trash2,
-  Sparkles
+  Edit2,
+  ShieldAlert,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface WaveMemberDetailProps {
@@ -24,6 +26,8 @@ interface WaveMemberDetailProps {
   onClose: () => void;
   onOpenPaymentForMonth: (membreId: string, mois: string) => void;
   onViewReceipt: (paiement: Paiement) => void;
+  onEditMember?: (membre: MembreWithStats) => void;
+  onOpenSanction?: (membre: MembreWithStats) => void;
 }
 
 export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
@@ -31,12 +35,16 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
   onClose,
   onOpenPaymentForMonth,
   onViewReceipt,
+  onEditMember,
+  onOpenSanction,
 }) => {
-  const { selectedMonth, devise, montantCotisation, nomVillage, updateMembre } = useData();
-  const { canCollectPayments, canEditMembers } = useAuth();
+  const { selectedMonth, devise, montantCotisation, nomVillage, updateMembre, deleteMembre } = useData();
+  const { canCollectPayments, canEditMembers, isAdmin } = useAuth();
 
   const [yearFilter, setYearFilter] = useState(selectedMonth.split('-')[0] || '2026');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const cleanPhone = membre.telephone.replace(/\s+/g, '');
 
   // 12 mois de l'année
   const monthsOfYear = Array.from({ length: 12 }, (_, i) => {
@@ -80,6 +88,18 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
     reader.readAsDataURL(file);
   };
 
+  // Suppression du membre (Admin)
+  const handleDeleteMember = async () => {
+    if (window.confirm(`Voulez-vous vraiment SUPPRIMER le membre ${membre.nom} (${membre.matricule}) ? Cette action est irréversible.`)) {
+      const res = await deleteMembre(membre.id);
+      if (res.success) {
+        onClose();
+      } else {
+        alert(res.error || 'Erreur lors de la suppression.');
+      }
+    }
+  };
+
   // Envoi d'un récapitulatif complet par WhatsApp
   const handleSendFullRecap = () => {
     const payesList = monthsDetail.filter((m) => m.isPaid).map((m) => `✅ ${formatMoisFrancais(m.mois)}`).join('\n');
@@ -89,7 +109,7 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
       `*🏛️ ${nomVillage.toUpperCase()}*\n` +
       `*BILAN DE VOS COTISATIONS (${yearFilter})*\n` +
       `--------------------------------\n` +
-      `👤 *Membre :* ${membre.nom}\n` +
+      `👤 *Membre :* ${membre.nom}${membre.surnom ? ` (${membre.surnom})` : ''}\n` +
       `🆔 *Matricule :* ${membre.matricule}\n` +
       `📞 *Téléphone :* ${membre.telephone}\n\n` +
       `💰 *Total versé :* ${formatMontant(totalPaidAmount, devise)} (${totalPaidMonths} mois)\n` +
@@ -98,28 +118,27 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
         : `🎉 *Statut :* Félicitations, vous êtes 100% à jour !\n\n`) +
       `*Détail de vos mois (${yearFilter}) :*\n` +
       (payesList ? `${payesList}\n` : '') +
-      (lateList ? `${lateList}\n` : '') +
-      `\n_Merci pour votre engagement envers le village ${nomVillage}._`;
+      (lateList ? `\n*Mois en retard :*\n${lateList}\n` : '') +
+      `\nMerci pour votre engagement au village.`;
 
-    partagerSurWhatsApp(message, membre.telephone, `Bilan Cotisations ${membre.nom}`);
+    partagerSurWhatsApp(membre.telephone, message);
   };
 
-  const cleanPhone = formatTelephoneWhatsApp(membre.telephone);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden max-h-[92vh] flex flex-col animate-slideUp">
-        {/* Header Style Wave avec Photo de Profil */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/90 backdrop-blur">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-md animate-fadeIn">
+      {/* Container Full Height Mobile Shell */}
+      <div className="bg-white w-full max-w-md h-full sm:h-[90vh] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slideUp">
+        {/* Top Sticky Header */}
+        <div className="bg-slate-50 border-b border-slate-200/80 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="w-9 h-9 rounded-2xl bg-white shadow-sm border border-slate-200/80 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-50 transition-colors"
+              className="p-2 rounded-2xl bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-sm transition-all active:scale-95"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
 
-            {/* Profile Avatar / Photo with optional change */}
+            {/* Profile Avatar / Photo */}
             <div className="relative group">
               {membre.photo ? (
                 <img
@@ -185,8 +204,74 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
           </div>
         </div>
 
+        {/* Admin & Trésorier Action Controls Bar */}
+        {(canEditMembers || isAdmin) && (
+          <div className="bg-slate-100/90 border-b border-slate-200/80 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+              Actions d'administration :
+            </span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Modifier */}
+              {canEditMembers && onEditMember && (
+                <button
+                  onClick={() => onEditMember(membre)}
+                  className="px-3 py-1 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1 shadow-sm transition-all"
+                  title="Modifier les informations"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>Modifier</span>
+                </button>
+              )}
+
+              {/* Sanctionner (Admin) */}
+              {isAdmin && onOpenSanction && (
+                <button
+                  onClick={() => onOpenSanction(membre)}
+                  className="px-3 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1 shadow-sm transition-all"
+                  title="Appliquer une sanction"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Sanction</span>
+                </button>
+              )}
+
+              {/* Supprimer (Admin) */}
+              {isAdmin && (
+                <button
+                  onClick={handleDeleteMember}
+                  className="px-3 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1 shadow-sm transition-all"
+                  title="Supprimer le membre"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Supprimer</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Body Content */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+          {/* Active Sanction Alert Box if present */}
+          {membre.sanction && (
+            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-4 flex items-start gap-3 animate-[popIn_0.3s_ease-out]">
+              <div className="p-2 rounded-2xl bg-amber-500 text-white shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-extrabold text-xs text-amber-900 uppercase tracking-wider">
+                  ⚠️ Sanction Active
+                </h4>
+                <p className="text-xs text-amber-800 mt-0.5 font-semibold">{membre.sanction}</p>
+                {Number(membre.sanction_montant) > 0 && (
+                  <p className="text-xs text-amber-900 font-extrabold mt-1">
+                    Amende à payer : {formatMontant(Number(membre.sanction_montant), devise)}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Member Info Card & Quick Stats */}
           <div className="relative rounded-3xl p-5 text-white overflow-hidden shadow-xl bg-gradient-to-br from-[#064e3b] via-[#047857] to-[#022c22] border border-emerald-500/20 space-y-3">
             <div className="flex items-center justify-between">
@@ -249,92 +334,63 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
               {monthsDetail.map((m) => {
                 const nomMois = formatMoisFrancais(m.mois);
 
-                if (m.isPaid) {
-                  // Payé
-                  return (
-                    <div
-                      key={m.mois}
-                      className="p-3.5 rounded-2xl bg-emerald-50/90 border border-emerald-200/90 flex items-center justify-between gap-2 shadow-sm"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xs font-black shadow-sm">
-                          ✓
-                        </div>
-                        <div>
-                          <p className="font-black text-sm text-slate-900">{nomMois}</p>
-                          <p className="text-[11px] text-emerald-800 font-semibold">
-                            Payé le {m.payment ? new Date(m.payment.date_paiement).toLocaleDateString('fr-FR') : ''} • {formatMontant(m.payment?.montant || montantCotisation, devise)}
-                          </p>
-                        </div>
+                return (
+                  <div
+                    key={m.mois}
+                    className={`p-3.5 rounded-2xl border flex items-center justify-between transition-all ${
+                      m.isPaid
+                        ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                        : m.isLate
+                        ? 'bg-rose-50/60 border-rose-200 text-rose-900'
+                        : 'bg-slate-50 border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
+                          m.isPaid
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : m.isLate
+                            ? 'bg-rose-600 text-white shadow-sm'
+                            : 'bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        {m.isPaid ? '✓' : m.monthIndex}
                       </div>
 
-                      {m.payment && (
-                        <button
-                          onClick={() => onViewReceipt(m.payment!)}
-                          className="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1 shadow-sm transition-colors"
-                          title="Voir le reçu WhatsApp"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Reçu</span>
-                        </button>
-                      )}
+                      <div>
+                        <p className="font-extrabold text-sm capitalize">{nomMois}</p>
+                        <p className="text-[11px] font-medium opacity-80">
+                          {m.isPaid
+                            ? `Encaissement : ${m.payment?.encaisseur || 'Trésorier'} (${m.payment?.mode_paiement || 'Espèces'})`
+                            : m.isLate
+                            ? 'Cotisation en attente de paiement'
+                            : 'Mois à venir'}
+                        </p>
+                      </div>
                     </div>
-                  );
-                } else if (m.isLate) {
-                  // En Retard (Action directe pour encaisser ce mois précis !)
-                  return (
-                    <div
-                      key={m.mois}
-                      className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200/90 flex items-center justify-between gap-2 shadow-sm"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center text-xs font-black">
-                          !
-                        </div>
-                        <div>
-                          <p className="font-black text-sm text-slate-900">{nomMois}</p>
-                          <p className="text-[11px] text-rose-700 font-extrabold">
-                            Non payé ({formatMontant(montantCotisation, devise)})
-                          </p>
-                        </div>
-                      </div>
 
-                      {canCollectPayments && (
+                    <div>
+                      {m.isPaid ? (
+                        <button
+                          onClick={() => m.payment && onViewReceipt(m.payment)}
+                          className="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-emerald-800 font-extrabold text-xs shadow-sm hover:bg-emerald-100 transition-colors"
+                        >
+                          Reçu 📄
+                        </button>
+                      ) : canCollectPayments ? (
                         <button
                           onClick={() => onOpenPaymentForMonth(membre.id, m.mois)}
-                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs shadow-md shadow-emerald-600/30 flex items-center gap-1.5 transition-all"
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs shadow-md shadow-emerald-600/30 transition-all"
                         >
-                          <CreditCard className="w-3.5 h-3.5" />
-                          <span>Encaisser {nomMois.split(' ')[0]}</span>
+                          Encaisser 💵
                         </button>
+                      ) : (
+                        <span className="text-xs font-bold text-slate-400">Non réglé</span>
                       )}
                     </div>
-                  );
-                } else {
-                  // Mois futur
-                  return (
-                    <div
-                      key={m.mois}
-                      className="p-3 rounded-2xl bg-slate-50 border border-slate-200/60 flex items-center justify-between text-slate-400 opacity-70"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold">
-                          •
-                        </div>
-                        <span className="font-bold text-xs text-slate-600">{nomMois}</span>
-                      </div>
-
-                      {canCollectPayments && (
-                        <button
-                          onClick={() => onOpenPaymentForMonth(membre.id, m.mois)}
-                          className="text-[11px] font-bold text-slate-600 hover:text-emerald-700 hover:underline px-2.5 py-1"
-                        >
-                          Payer d'avance
-                        </button>
-                      )}
-                    </div>
-                  );
-                }
+                  </div>
+                );
               })}
             </div>
           </div>
