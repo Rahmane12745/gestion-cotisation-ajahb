@@ -1,5 +1,5 @@
 -- ====================================================================
--- REGISTRE NUMÉRIQUE DES COTISATIONS DU VILLAGE
+-- REGISTRE NUMÉRIQUE DES COTISATIONS DU VILLAGE (AJAHB)
 -- Schéma de base de données Supabase (PostgreSQL)
 -- ====================================================================
 
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
     date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
--- 3. Séquence pour numéro matricule membre (ex: MBR-001)
+-- 3. Séquence pour numéro matricule membre (ex: MBR-0001)
 CREATE SEQUENCE IF NOT EXISTS membre_seq START 1;
 
 -- 4. Table des MEMBRES
@@ -64,22 +64,33 @@ CREATE TABLE IF NOT EXISTS public.depenses (
 CREATE INDEX IF NOT EXISTS idx_depenses_date ON public.depenses(date_depense DESC);
 
 -- ====================================================================
--- SÉCURITÉ ROW LEVEL SECURITY (RLS)
--- Désactivé pour autoriser l'API frontend de l'application
+-- ACTIVATION RLS AVEC POLITIQUES ACCÈS PUBLIC (ACCÈS API WEB SANS AVERTISSEMENT)
 -- ====================================================================
 
-ALTER TABLE public.utilisateurs DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.membres DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.paiements DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.depenses DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.utilisateurs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.membres ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.paiements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.depenses ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public utilisateurs" ON public.utilisateurs;
+CREATE POLICY "Allow public utilisateurs" ON public.utilisateurs FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public membres" ON public.membres;
+CREATE POLICY "Allow public membres" ON public.membres FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public paiements" ON public.paiements;
+CREATE POLICY "Allow public paiements" ON public.paiements FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public depenses" ON public.depenses;
+CREATE POLICY "Allow public depenses" ON public.depenses FOR ALL USING (true) WITH CHECK (true);
 
 -- ====================================================================
 -- DONNÉES INITIALES DE DÉMARRAGE (3 COMPTES PAR DÉFAUT)
 -- ====================================================================
--- Mots de passe par défaut : admin123, tresor123, bureau123
 INSERT INTO public.utilisateurs (email, nom, role, mot_de_passe, actif)
 VALUES 
   ('admin@ajahb.org', 'Moussa Diallo (Président)', 'admin', 'admin123', true),
   ('tresorier@ajahb.org', 'Amadou Sow (Trésorier)', 'tresorier', 'tresor123', true),
   ('bureau@ajahb.org', 'Fatou Ndiaye (Secrétaire)', 'membre_bureau', 'bureau123', true)
 ON CONFLICT (email) DO NOTHING;
+
