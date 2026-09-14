@@ -55,9 +55,17 @@ export const WaveJournal: React.FC<WaveJournalProps> = ({ onViewReceipt }) => {
                 className="bg-white rounded-2xl p-4 border border-slate-200/70 shadow-sm hover:border-emerald-300 transition-all flex items-center justify-between gap-3 cursor-pointer"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center">
-                    💰
-                  </div>
+                  {membre?.photo ? (
+                    <img
+                      src={membre.photo}
+                      alt={membre.nom}
+                      className="w-10 h-10 rounded-2xl object-cover flex-shrink-0 shadow-sm border border-slate-200/80"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
+                      {(membre?.nom || 'M').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="font-extrabold text-sm text-slate-900 truncate">
                       {membre?.nom || 'Membre'}
