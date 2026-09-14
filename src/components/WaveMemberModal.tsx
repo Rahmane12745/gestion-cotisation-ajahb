@@ -16,6 +16,7 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
   const { addMembre } = useData();
 
   const [nom, setNom] = useState('');
+  const [surnom, setSurnom] = useState('');
   const [telephone, setTelephone] = useState('');
   const [quartier, setQuartier] = useState('');
   const [photo, setPhoto] = useState<string>('');
@@ -27,6 +28,7 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setNom('');
+      setSurnom('');
       setTelephone('');
       setQuartier('');
       setPhoto('');
@@ -66,6 +68,7 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
     setIsSubmitting(true);
     const res = await addMembre({
       nom: nom.trim(),
+      surnom: surnom.trim() || undefined,
       telephone: telephone.trim(),
       quartier: quartier.trim() || undefined,
       photo: photo || undefined,
@@ -91,7 +94,7 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
             </div>
             <div>
               <h3 className="font-black text-base text-slate-900">Nouveau Membre</h3>
-              <p className="text-xs text-slate-500">Ajout avec photo de profil</p>
+              <p className="text-xs text-slate-500">Ajout avec photo & surnom</p>
             </div>
           </div>
           <button
@@ -165,6 +168,19 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
               className="w-full px-4 py-3 rounded-2xl bg-slate-100 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white border border-transparent font-semibold"
               required
               autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-black text-slate-700 block mb-1">
+              Surnom (Optionnel)
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Baye, Modou, Titi..."
+              value={surnom}
+              onChange={(e) => setSurnom(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl bg-slate-100 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white border border-transparent font-medium"
             />
           </div>
 

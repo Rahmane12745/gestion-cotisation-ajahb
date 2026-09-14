@@ -69,6 +69,7 @@ export const WavePaymentModal: React.FC<WavePaymentModalProps> = ({
 
   const filteredMembres = membres.filter((m) =>
     m.nom.toLowerCase().includes(searchMember.toLowerCase()) ||
+    (m.surnom && m.surnom.toLowerCase().includes(searchMember.toLowerCase())) ||
     m.telephone.includes(searchMember) ||
     m.matricule.toLowerCase().includes(searchMember.toLowerCase())
   );
@@ -174,7 +175,9 @@ export const WavePaymentModal: React.FC<WavePaymentModalProps> = ({
                         </div>
                       )}
                       <div>
-                        <div className="font-bold text-sm text-slate-800">{m.nom}</div>
+                        <div className="font-bold text-sm text-slate-800">
+                          {m.nom} {m.surnom && <span className="text-emerald-700 font-semibold text-xs">({m.surnom})</span>}
+                        </div>
                         <div className="text-xs text-slate-500">{m.telephone}</div>
                       </div>
                     </div>

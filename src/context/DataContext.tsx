@@ -16,7 +16,7 @@ interface DataContextType {
   devise: string;
   nomVillage: string;
   isLoading: boolean;
-  addMembre: (data: { nom: string; telephone: string; quartier?: string; photo?: string }) => Promise<{ success: boolean; membre?: Membre; error?: string }>;
+  addMembre: (data: { nom: string; surnom?: string; telephone: string; quartier?: string; photo?: string }) => Promise<{ success: boolean; membre?: Membre; error?: string }>;
   updateMembre: (id: string, data: Partial<Membre>) => Promise<{ success: boolean; error?: string }>;
   deleteMembre: (id: string) => Promise<{ success: boolean; error?: string }>;
   addPaiement: (data: {
@@ -152,7 +152,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [membres, membresWithStats, paiements, selectedMonth, montantCotisation]);
 
   // Ajouter un membre
-  const addMembre = async (data: { nom: string; telephone: string; quartier?: string; photo?: string }) => {
+  const addMembre = async (data: { nom: string; surnom?: string; telephone: string; quartier?: string; photo?: string }) => {
     try {
       if (isSupabaseConfigured() && supabase) {
         const nextNumber = membres.length + 1;
@@ -160,9 +160,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const newMembre = {
           matricule,
           nom: data.nom.trim(),
+          surnom: data.surnom?.trim() || null,
           telephone: data.telephone.trim(),
           quartier: data.quartier?.trim() || 'Non spécifié',
-          photo: data.photo,
+          photo: data.photo || null,
           actif: true,
         };
         const { data: inserted, error } = await supabase.from('membres').insert([newMembre]).select().single();

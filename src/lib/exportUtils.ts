@@ -77,7 +77,7 @@ export const exporterBilanMensuelPDF = (
   const tableData = membres.map((m, index) => [
     index + 1,
     m.matricule,
-    m.nom,
+    m.surnom ? `${m.nom} (${m.surnom})` : m.nom,
     m.telephone,
     m.quartier || '-',
     m.statutMoisCourant ? 'PAYÉ' : 'EN RETARD',
@@ -312,7 +312,7 @@ export const exporterRegistreMembresPDF = (
   const tableData = membres.map((m, index) => [
     index + 1,
     m.matricule,
-    m.nom,
+    m.surnom ? `${m.nom} (${m.surnom})` : m.nom,
     m.telephone,
     m.quartier || 'Non spécifié',
     `${m.moisPayesCount} mois`,

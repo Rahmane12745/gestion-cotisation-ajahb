@@ -13,6 +13,7 @@ export interface Membre {
   id: string;
   matricule: string;
   nom: string;
+  surnom?: string;
   telephone: string;
   quartier?: string;
   photo?: string;

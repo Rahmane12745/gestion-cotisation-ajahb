@@ -33,6 +33,7 @@ export const WaveMemberListTab: React.FC<WaveMemberListTabProps> = ({
     return membresWithStats.filter((m) => {
       const matchSearch =
         m.nom.toLowerCase().includes(search.toLowerCase()) ||
+        (m.surnom && m.surnom.toLowerCase().includes(search.toLowerCase())) ||
         m.telephone.includes(search) ||
         m.matricule.toLowerCase().includes(search.toLowerCase()) ||
         (m.quartier && m.quartier.toLowerCase().includes(search.toLowerCase()));
@@ -159,9 +160,9 @@ export const WaveMemberListTab: React.FC<WaveMemberListTabProps> = ({
                   )}
 
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-extrabold text-sm text-slate-900 truncate">
-                        {m.nom}
+                        {m.nom} {m.surnom && <span className="text-emerald-700 font-semibold text-xs">({m.surnom})</span>}
                       </p>
                       <span className="text-[10px] font-mono text-slate-400 font-bold bg-slate-100 px-1.5 py-0.2 rounded">
                         {m.matricule}

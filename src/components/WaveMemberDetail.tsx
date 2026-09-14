@@ -153,9 +153,9 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
             </div>
 
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-black text-base sm:text-lg text-slate-900 leading-tight">
-                  {membre.nom}
+                  {membre.nom} {membre.surnom && <span className="text-emerald-700 text-sm font-bold">({membre.surnom})</span>}
                 </h3>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                   {membre.matricule}

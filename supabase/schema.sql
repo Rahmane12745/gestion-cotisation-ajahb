@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.membres (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     matricule TEXT UNIQUE NOT NULL DEFAULT ('MBR-' || LPAD(nextval('membre_seq')::TEXT, 4, '0')),
     nom TEXT NOT NULL,
+    surnom TEXT,
     telephone TEXT NOT NULL,
     quartier TEXT,
     photo TEXT,
