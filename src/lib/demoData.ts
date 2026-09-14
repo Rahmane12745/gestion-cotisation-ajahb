@@ -1,4 +1,4 @@
-import { Membre, Paiement, UserProfile } from '@/types';
+import { Membre, Paiement, UserProfile, Depense } from '@/types';
 
 export const INITIAL_USERS: UserProfile[] = [
   {
@@ -232,5 +232,26 @@ export const INITIAL_PAIEMENTS: Paiement[] = [
     encaisseur: 'Moussa Diallo',
     mode_paiement: 'Espèces',
     reference_recu: 'REC-202609-006',
+  },
+];
+
+export const INITIAL_DEPENSES: Depense[] = [
+  {
+    id: 'dep-001',
+    motif: 'Achat de fournitures pour la grande réunion mensuelle',
+    montant: 3500,
+    date_depense: '2026-09-03T10:00:00Z',
+    categorie: 'Réunion',
+    enregistre_par: 'Amadou Sow (Trésorier)',
+    remarque: 'Sacs d\'eau, nattes et café pour l\'assemblée',
+  },
+  {
+    id: 'dep-002',
+    motif: 'Secours social et solidarité familiale pour la famille Ndiaye',
+    montant: 5000,
+    date_depense: '2026-09-07T14:30:00Z',
+    categorie: 'Social',
+    enregistre_par: 'Moussa Diallo (Président)',
+    remarque: 'Soutien voté lors de la réunion du bureau',
   },
 ];

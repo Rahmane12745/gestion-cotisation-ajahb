@@ -15,6 +15,7 @@ import { ExportModal } from '@/components/ExportModal';
 import { UsersAdminModal } from '@/components/UsersAdminModal';
 import { BroadcastModal } from '@/components/BroadcastModal';
 import { SanctionModal } from '@/components/SanctionModal';
+import { DepenseModal } from '@/components/DepenseModal';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 import { LoginPage } from '@/components/LoginPage';
 import { MembreWithStats, Paiement, Membre } from '@/types';
@@ -44,9 +45,12 @@ export default function Home() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<Paiement | null>(null);
 
+  const [isDepenseModalOpen, setIsDepenseModalOpen] = useState(false);
+
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+
 
   // PWA Prompt
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -148,6 +152,7 @@ export default function Home() {
             <WaveDashboard
               onOpenPayment={(id) => handleOpenPayment(id)}
               onOpenBroadcast={() => setIsBroadcastOpen(true)}
+              onOpenDepense={() => setIsDepenseModalOpen(true)}
               onSelectMember={(m) => setSelectedMember(m)}
               onViewReceipt={handleViewReceipt}
             />
@@ -257,6 +262,11 @@ export default function Home() {
           memberToEdit={memberToEdit}
         />
 
+        <DepenseModal
+          isOpen={isDepenseModalOpen}
+          onClose={() => setIsDepenseModalOpen(false)}
+        />
+
         <SanctionModal
           isOpen={isSanctionOpen}
           onClose={() => setIsSanctionOpen(false)}
@@ -292,3 +302,4 @@ export default function Home() {
     </div>
   );
 }
+

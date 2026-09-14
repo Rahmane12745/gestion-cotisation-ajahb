@@ -5,7 +5,8 @@ import { useData } from '@/context/DataContext';
 import {
   exporterBilanMensuelPDF,
   exporterJournalPaiementsPDF,
-  exporterRegistreMembresPDF
+  exporterRegistreMembresPDF,
+  exporterRapportFinancierBudgetPDF
 } from '@/lib/exportUtils';
 import { FileText, Download, Check, X, Calendar, Users, Receipt, ShieldCheck } from 'lucide-react';
 import { formatMoisFrancais } from '@/lib/whatsappUtils';
@@ -19,7 +20,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { membresWithStats, paiements, membres, selectedMonth, stats, nomVillage } = useData();
+  const { membresWithStats, paiements, depenses, membres, selectedMonth, stats, nomVillage } = useData();
   const [downloading, setDownloading] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -48,6 +49,15 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     setDownloading('registre-membres');
     try {
       exporterRegistreMembresPDF(membresWithStats, nomVillage);
+    } finally {
+      setTimeout(() => setDownloading(null), 1200);
+    }
+  };
+
+  const handleExportRapportFinancier = () => {
+    setDownloading('rapport-financier');
+    try {
+      exporterRapportFinancierBudgetPDF(paiements, depenses, selectedMonth, nomVillage);
     } finally {
       setTimeout(() => setDownloading(null), 1200);
     }
@@ -108,7 +118,33 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               </button>
             </div>
 
-            {/* 2. Journal des Paiements PDF */}
+            {/* 2. Rapport Financier & Caisse PDF */}
+            <div className="p-3.5 rounded-2xl border border-slate-200/80 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-50/20 transition-all flex items-center justify-between gap-3 shadow-sm">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-800 flex items-center justify-center flex-shrink-0 font-bold">
+                  📊
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-extrabold text-sm text-slate-900 truncate">
+                    Rapport Financier & Fond de Caisse (PDF)
+                  </h4>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    Recettes vs Dépenses, Solde net et état par réunion
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleExportRapportFinancier}
+                disabled={downloading !== null}
+                className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-black text-xs transition-all whitespace-nowrap shadow-sm disabled:opacity-50"
+              >
+                {downloading === 'rapport-financier' ? <Check className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
+                <span>PDF</span>
+              </button>
+            </div>
+
+            {/* 3. Journal des Paiements PDF */}
             <div className="p-3.5 rounded-2xl border border-slate-200/80 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-50/20 transition-all flex items-center justify-between gap-3 shadow-sm">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-teal-100 text-teal-800 flex items-center justify-center flex-shrink-0 font-bold">
@@ -134,7 +170,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               </button>
             </div>
 
-            {/* 3. Registre Complet des Membres PDF */}
+            {/* 4. Registre Complet des Membres PDF */}
             <div className="p-3.5 rounded-2xl border border-slate-200/80 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-50/20 transition-all flex items-center justify-between gap-3 shadow-sm">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-800 flex items-center justify-center flex-shrink-0 font-bold">
@@ -160,6 +196,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               </button>
             </div>
           </div>
+
 
           <div className="pt-2 flex justify-end">
             <button

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { DashboardStats, Membre, MembreWithStats, MonthPaymentStatus, Paiement } from '@/types';
-import { INITIAL_MEMBRES, INITIAL_PAIEMENTS } from '@/lib/demoData';
+import { DashboardStats, Membre, MembreWithStats, MonthPaymentStatus, Paiement, Depense } from '@/types';
+import { INITIAL_MEMBRES, INITIAL_PAIEMENTS, INITIAL_DEPENSES } from '@/lib/demoData';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 interface DataContextType {
   membres: Membre[];
   paiements: Paiement[];
+  depenses: Depense[];
   membresWithStats: MembreWithStats[];
   stats: DashboardStats;
   selectedMonth: string; // 'AAAA-MM'
@@ -28,6 +29,14 @@ interface DataContextType {
     remarque?: string;
   }) => Promise<{ success: boolean; paiement?: Paiement; error?: string }>;
   deletePaiement: (id: string) => Promise<{ success: boolean; error?: string }>;
+  addDepense: (data: {
+    motif: string;
+    montant: number;
+    categorie?: string;
+    enregistre_par: string;
+    remarque?: string;
+  }) => Promise<{ success: boolean; depense?: Depense; error?: string }>;
+  deleteDepense: (id: string) => Promise<{ success: boolean; error?: string }>;
   getPaiementsForMembre: (membreId: string) => Paiement[];
   getMembreById: (id: string) => Membre | undefined;
   resetToDemoData: () => Promise<void>;
@@ -47,6 +56,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [selectedMonth, setSelectedMonth] = useState<string>(currentYearMonth());
   const [membres, setMembres] = useState<Membre[]>(INITIAL_MEMBRES);
   const [paiements, setPaiements] = useState<Paiement[]>(INITIAL_PAIEMENTS);
+  const [depenses, setDepenses] = useState<Depense[]>(INITIAL_DEPENSES);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const montantCotisation = Number(process.env.NEXT_PUBLIC_DEFAULT_COTISATION_AMOUNT) || 2000;
@@ -59,14 +69,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isSupabaseConfigured() && supabase) {
         const { data: mData } = await supabase.from('membres').select('*').order('date_creation', { ascending: true });
         const { data: pData } = await supabase.from('paiements').select('*').order('date_paiement', { ascending: false });
+        const { data: dData } = await supabase.from('depenses').select('*').order('date_depense', { ascending: false });
         if (mData) setMembres(mData);
         if (pData) setPaiements(pData);
+        if (dData) setDepenses(dData);
       } else {
         const res = await fetch('/api/data');
         if (res.ok) {
           const json = await res.json();
           if (json.membres) setMembres(json.membres);
           if (json.paiements) setPaiements(json.paiements);
+          if (json.depenses) setDepenses(json.depenses);
         }
       }
     } catch (err) {
@@ -138,6 +151,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const paiementsAnnee = paiements.filter((p) => p.mois.startsWith(currentYear));
     const totalCollecteAnnee = paiementsAnnee.reduce((acc, p) => acc + Number(p.montant), 0);
 
+    const depensesAnnee = depenses.filter((d) => d.date_depense && d.date_depense.startsWith(currentYear));
+    const totalDepensesAnnee = depensesAnnee.reduce((acc, d) => acc + Number(d.montant), 0);
+
+    const soldeNetCaisse = totalCollecteAnnee - totalDepensesAnnee;
     const objectifMois = totalMembres * montantCotisation;
 
     return {
@@ -147,9 +164,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       tauxRecouvrement,
       totalCollecteMois,
       totalCollecteAnnee,
+      totalDepensesAnnee,
+      soldeNetCaisse,
       objectifMois,
     };
-  }, [membres, membresWithStats, paiements, selectedMonth, montantCotisation]);
+  }, [membres, membresWithStats, paiements, depenses, selectedMonth, montantCotisation]);
 
   // Ajouter un membre
   const addMembre = async (data: { nom: string; surnom?: string; telephone: string; quartier?: string; photo?: string }) => {
@@ -287,6 +306,59 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Enregistrer une dépense
+  const addDepense = async (data: {
+    motif: string;
+    montant: number;
+    categorie?: string;
+    enregistre_par: string;
+    remarque?: string;
+  }) => {
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        const newDep = {
+          motif: data.motif.trim(),
+          montant: data.montant,
+          categorie: data.categorie?.trim() || 'Général',
+          enregistre_par: data.enregistre_par,
+          remarque: data.remarque?.trim() || null,
+        };
+        const { data: inserted, error } = await supabase.from('depenses').insert([newDep]).select().single();
+        if (error) return { success: false, error: error.message };
+        setDepenses((prev) => [inserted, ...prev]);
+        return { success: true, depense: inserted };
+      } else {
+        const newDepense: Depense = {
+          id: `dep-${Date.now()}`,
+          motif: data.motif.trim(),
+          montant: data.montant,
+          date_depense: new Date().toISOString(),
+          categorie: data.categorie?.trim() || 'Général',
+          enregistre_par: data.enregistre_par,
+          remarque: data.remarque?.trim(),
+        };
+        setDepenses((prev) => [newDepense, ...prev]);
+        return { success: true, depense: newDepense };
+      }
+    } catch (err) {
+      return { success: false, error: 'Erreur réseau lors de la saisie de la dépense' };
+    }
+  };
+
+  // Supprimer une dépense
+  const deleteDepense = async (id: string) => {
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        const { error } = await supabase.from('depenses').delete().eq('id', id);
+        if (error) return { success: false, error: error.message };
+      }
+      setDepenses((prev) => prev.filter((d) => d.id !== id));
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: 'Erreur lors de la suppression de la dépense' };
+    }
+  };
+
   const getPaiementsForMembre = (membreId: string) => {
     return paiements.filter((p) => p.membre_id === membreId);
   };
@@ -306,6 +378,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       setMembres(INITIAL_MEMBRES);
       setPaiements(INITIAL_PAIEMENTS);
+      setDepenses(INITIAL_DEPENSES);
     }
   };
 
@@ -314,6 +387,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         membres,
         paiements,
+        depenses,
         membresWithStats,
         stats,
         selectedMonth,
@@ -327,6 +401,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteMembre,
         addPaiement,
         deletePaiement,
+        addDepense,
+        deleteDepense,
         getPaiementsForMembre,
         getMembreById,
         resetToDemoData,

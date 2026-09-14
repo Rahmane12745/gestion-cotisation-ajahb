@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Membre, MembreWithStats, Paiement } from '@/types';
+import { Membre, MembreWithStats, Paiement, Depense } from '@/types';
 import { formatMoisFrancais, formatMontant } from './whatsappUtils';
 
 /**
@@ -363,3 +363,140 @@ export const exporterRegistreMembresPDF = (
   const dateStr = new Date().toISOString().split('T')[0];
   doc.save(`AJAHB_Registre_Membres_${dateStr}.pdf`);
 };
+
+/**
+ * 4. RAPPORT FINANCIER & BILAN BUDGÉTAIRE (PDF) - AJAHB
+ * Calcule : Recettes Cotisations - Dépenses Déboursées = Solde Net en Caisse
+ */
+export const exporterRapportFinancierBudgetPDF = (
+  paiements: Paiement[],
+  depenses: Depense[],
+  moisActuel: string,
+  nomVillage = 'AJAHB'
+) => {
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const dateGeneration = new Date().toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const totalRecettes = paiements.reduce((sum, p) => sum + Number(p.montant), 0);
+  const totalDepenses = depenses.reduce((sum, d) => sum + Number(d.montant), 0);
+  const soldeNet = totalRecettes - totalDepenses;
+
+  // En-tête
+  doc.setFillColor(5, 150, 105);
+  doc.rect(0, 0, 210, 6, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor(5, 150, 105);
+  doc.text(nomVillage.toUpperCase(), 14, 19);
+
+  doc.setFontSize(9.5);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Trésorerie & Bilan Financier Général', 14, 25);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`RAPPORT FINANCIER & ÉTAT DU FOND DE CAISSE`, 14, 35);
+
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Généré le ${dateGeneration} | Association AJAHB`, 14, 40);
+
+  // --- CADRE RÉSUMÉ COMPTABLE ---
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(14, 44, 182, 26, 2, 2, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(5, 150, 105);
+  doc.text(`TOTAL RECETTES (COTISATIONS) : ${formatMontant(totalRecettes, 'F')}`, 20, 52);
+
+  doc.setTextColor(225, 29, 72);
+  doc.text(`TOTAL DÉPENSES DÉBOURSÉES : ${formatMontant(totalDepenses, 'F')}`, 20, 62);
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(11);
+  doc.text(`SOLDE NET EN CAISSE : ${formatMontant(soldeNet, 'F')}`, 105, 57);
+
+  // --- TABLEAU DES DÉPENSES ---
+  const tableData = depenses.map((d, index) => [
+    index + 1,
+    d.motif,
+    d.categorie || 'Général',
+    formatMontant(d.montant, 'F'),
+    new Date(d.date_depense).toLocaleDateString('fr-FR'),
+    d.enregistre_par || 'Trésorier',
+    d.remarque || '-',
+  ]);
+
+  autoTable(doc, {
+    startY: 75,
+    margin: { left: 14, right: 14 },
+    tableWidth: 182,
+    head: [['N°', 'Motif / Libellé', 'Catégorie', 'Montant', 'Date', 'Enregistré par', 'Remarque']],
+    body: tableData,
+    theme: 'grid',
+    styles: {
+      overflow: 'linebreak',
+      cellPadding: 2,
+    },
+    headStyles: {
+      fillColor: [225, 29, 72],
+      textColor: 255,
+      fontSize: 8,
+      fontStyle: 'bold',
+    },
+    bodyStyles: {
+      fontSize: 7.5,
+      textColor: [30, 41, 59],
+    },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 45 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 25, halign: 'right' },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 24 },
+      6: { cellWidth: 30 },
+    },
+    alternateRowStyles: {
+      fillColor: [254, 242, 242],
+    },
+    didDrawPage: (data) => {
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`AJAHB • Bilan Financier & Caisse • Page ${data.pageNumber} sur ${pageCount}`, 14, 290);
+    },
+  });
+
+  // Bloc de signatures officiel
+  const finalY = (doc as any).lastAutoTable.finalY + 12;
+  if (finalY < 265) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text('Le Trésorier Général', 25, finalY);
+    doc.text('Le Président de l\'AJAHB', 135, finalY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text('(Signature & Cachet)', 25, finalY + 4);
+    doc.text('(Signature & Cachet)', 135, finalY + 4);
+  }
+
+  const dateStr = new Date().toISOString().split('T')[0];
+  doc.save(`AJAHB_Bilan_Financier_${dateStr}.pdf`);
+};
+

@@ -49,11 +49,19 @@ CREATE TABLE IF NOT EXISTS public.paiements (
     date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
--- Contrainte d'unicité optionnelle pour éviter double paiement du même mois par membre
--- Si un membre paie en 2 fois, on peut retirer cette contrainte ou autoriser plusieurs acomptes.
-CREATE INDEX IF NOT EXISTS idx_paiements_membre_mois ON public.paiements(membre_id, mois);
-CREATE INDEX IF NOT EXISTS idx_membres_recherche ON public.membres(nom, telephone, matricule);
-CREATE INDEX IF NOT EXISTS idx_paiements_date ON public.paiements(date_paiement DESC);
+-- 6. Table des DÉPENSES DU VILLAGE
+CREATE TABLE IF NOT EXISTS public.depenses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    motif TEXT NOT NULL,
+    montant NUMERIC(12, 2) NOT NULL CHECK (montant > 0),
+    date_depense TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+    categorie TEXT DEFAULT 'Général',
+    enregistre_par TEXT NOT NULL,
+    remarque TEXT,
+    date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
+
+CREATE INDEX IF NOT EXISTS idx_depenses_date ON public.depenses(date_depense DESC);
 
 -- ====================================================================
 -- SÉCURITÉ ROW LEVEL SECURITY (RLS)
@@ -63,6 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_paiements_date ON public.paiements(date_paiement 
 ALTER TABLE public.utilisateurs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.membres DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.paiements DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.depenses DISABLE ROW LEVEL SECURITY;
 
 -- ====================================================================
 -- DONNÉES INITIALES DE DÉMARRAGE (3 COMPTES PAR DÉFAUT)

@@ -40,6 +40,17 @@ export interface Paiement {
   membre?: Membre;
 }
 
+export interface Depense {
+  id: string;
+  motif: string;
+  montant: number;
+  date_depense: string;
+  categorie?: string; // e.g. 'Réunion', 'Événement', 'Aide Sociale', 'Matériel'
+  enregistre_par: string;
+  remarque?: string;
+  date_creation?: string;
+}
+
 export interface MonthPaymentStatus {
   mois: string;
   paye: boolean;
@@ -64,5 +75,7 @@ export interface DashboardStats {
   tauxRecouvrement: number;
   totalCollecteMois: number;
   totalCollecteAnnee: number;
+  totalDepensesAnnee: number;
+  soldeNetCaisse: number;
   objectifMois: number;
 }

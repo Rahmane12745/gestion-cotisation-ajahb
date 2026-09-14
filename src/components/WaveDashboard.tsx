@@ -13,13 +13,16 @@ import {
   EyeOff,
   Radio,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  TrendingDown,
+  Wallet
 } from 'lucide-react';
 import { MembreWithStats, Paiement } from '@/types';
 
 interface WaveDashboardProps {
   onOpenPayment: (defaultMemberId?: string) => void;
   onOpenBroadcast: () => void;
+  onOpenDepense: () => void;
   onSelectMember: (m: MembreWithStats) => void;
   onViewReceipt: (paiement: Paiement) => void;
 }
@@ -27,11 +30,12 @@ interface WaveDashboardProps {
 export const WaveDashboard: React.FC<WaveDashboardProps> = ({
   onOpenPayment,
   onOpenBroadcast,
+  onOpenDepense,
   onSelectMember,
   onViewReceipt,
 }) => {
   const { stats, selectedMonth, setSelectedMonth, membresWithStats, paiements, devise, nomVillage, montantCotisation } = useData();
-  const { canCollectPayments } = useAuth();
+  const { canCollectPayments, isTresorier, isAdmin } = useAuth();
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'late' | 'paid'>('all');
@@ -99,32 +103,58 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
             {formatMoisFrancais(selectedMonth)}
           </span>
 
-          <button
-            onClick={onOpenBroadcast}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-emerald-100 text-[11px] font-bold backdrop-blur transition-all"
-            title="Diffuser le point dans le groupe WhatsApp"
-          >
-            <Radio className="w-3.5 h-3.5 text-emerald-300" />
-            <span>Diffuser le point</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            {(isAdmin || isTresorier) && (
+              <button
+                onClick={onOpenDepense}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/30 hover:bg-rose-500/40 active:scale-95 text-rose-200 text-[11px] font-extrabold backdrop-blur border border-rose-400/30 transition-all"
+                title="Enregistrer une dépense déboursée par le village"
+              >
+                <TrendingDown className="w-3.5 h-3.5 text-rose-300" />
+                <span>+ Dépense</span>
+              </button>
+            )}
+
+            <button
+              onClick={onOpenBroadcast}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-emerald-100 text-[11px] font-bold backdrop-blur transition-all"
+              title="Diffuser le point dans le groupe WhatsApp"
+            >
+              <Radio className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Diffuser</span>
+            </button>
+          </div>
         </div>
 
         {/* Balance Amount with Show/Hide toggle */}
         <div className="my-2">
-          <div className="flex items-center gap-2 text-xs text-emerald-200/90 font-medium">
-            <span>Total Collecté</span>
-            <button
-              onClick={() => setShowBalance(!showBalance)}
-              className="text-emerald-300/80 hover:text-white transition-colors"
-            >
-              {showBalance ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-            </button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-emerald-200/90 font-medium">
+              <span>Solde Net en Caisse</span>
+              <button
+                onClick={() => setShowBalance(!showBalance)}
+                className="text-emerald-300/80 hover:text-white transition-colors"
+              >
+                {showBalance ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+            {stats.totalDepensesAnnee > 0 && (
+              <span className="text-[10px] text-rose-300 font-bold bg-rose-950/40 px-2 py-0.5 rounded-full border border-rose-500/30">
+                Dépenses: -{formatMontant(stats.totalDepensesAnnee, devise)}
+              </span>
+            )}
           </div>
 
           <div className="text-3xl sm:text-4xl font-black tracking-tight mt-0.5 flex items-baseline gap-2">
-            <span>{showBalance ? formatMontant(stats.totalCollecteMois, devise) : '••••••••'}</span>
+            <span>{showBalance ? formatMontant(stats.soldeNetCaisse, devise) : '••••••••'}</span>
+          </div>
+
+          <div className="text-[11px] text-emerald-300/80 mt-1 font-medium flex items-center gap-1">
+            <span>Cotisations collectées:</span>
+            <strong className="text-white">{showBalance ? formatMontant(stats.totalCollecteMois, devise) : '••••'}</strong>
           </div>
         </div>
+
 
         {/* Horizontal Mini Month Carousel */}
         <div className="mt-4 pt-3 border-t border-emerald-500/30">
