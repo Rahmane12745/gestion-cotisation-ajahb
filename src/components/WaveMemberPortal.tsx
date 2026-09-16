@@ -26,14 +26,28 @@ import {
 interface WaveMemberPortalProps {
   onViewReceipt: (p: Paiement) => void;
   onLogout?: () => void;
+  portalTab?: 'cotisations' | 'profil';
+  setPortalTab?: (tab: 'cotisations' | 'profil') => void;
 }
 
-export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({ onViewReceipt, onLogout }) => {
+export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
+  onViewReceipt,
+  onLogout,
+  portalTab: externalPortalTab,
+  setPortalTab: externalSetPortalTab,
+}) => {
   const { membresWithStats, paiements, updateMembre, devise, montantCotisation, nomVillage } = useData();
   const { currentUser, logout, updateProfile } = useAuth();
 
   // Navigation tab pour l'espace membre: 'cotisations' | 'profil'
-  const [portalTab, setPortalTab] = useState<'cotisations' | 'profil'>('cotisations');
+  const [internalPortalTab, setInternalPortalTab] = useState<'cotisations' | 'profil'>('cotisations');
+  const portalTab = externalPortalTab !== undefined ? externalPortalTab : internalPortalTab;
+  const setPortalTab = (tab: 'cotisations' | 'profil') => {
+    if (externalSetPortalTab) {
+      externalSetPortalTab(tab);
+    }
+    setInternalPortalTab(tab);
+  };
 
   // Trouver le membre correspondant à l'utilisateur connecté
   const membreAssocie = useMemo(() => {

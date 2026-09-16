@@ -126,6 +126,9 @@ export default function Home() {
     }
   };
 
+  // Member portal tab state
+  const [memberPortalTab, setMemberPortalTab] = useState<'cotisations' | 'profil'>('cotisations');
+
   // Loading screen
   if (authLoading) {
     return (
@@ -143,16 +146,75 @@ export default function Home() {
     return <LoginPage onLogin={loginWithEmail} isLoading={authLoading} />;
   }
 
-  // Si l'utilisateur connecté est un rôle "membre" simple, lui afficher le Portail Membre directement !
+  // Si l'utilisateur connecté est un rôle "membre" simple, lui afficher le Portail Membre complet !
   if (role === 'membre') {
     return (
-      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-900 font-sans">
-        <div className="w-full max-w-md mx-auto min-h-screen bg-[#F5F6F8] flex flex-col shadow-2xl relative border-x border-slate-200/30 px-4 pt-4 pb-12">
-          <WaveMemberPortal onViewReceipt={handleViewReceipt} onLogout={logout} />
+      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-900 font-sans selection:bg-emerald-500 selection:text-white">
+        <div className="w-full max-w-md mx-auto min-h-screen bg-[#F5F6F8] flex flex-col shadow-2xl relative border-x border-slate-200/30">
+          {/* Header */}
+          <WaveHeader
+            onOpenProfile={() => setMemberPortalTab('profil')}
+            deferredPrompt={deferredPrompt}
+            onInstallPwa={handleInstallPwa}
+          />
+
+          {/* Main Content */}
+          <main className="flex-1 w-full px-4 pt-4 pb-24">
+            <WaveMemberPortal
+              portalTab={memberPortalTab}
+              setPortalTab={setMemberPortalTab}
+              onViewReceipt={handleViewReceipt}
+              onLogout={logout}
+            />
+          </main>
+
+          {/* Bottom Navigation (Membre) */}
+          <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-40 bg-white/98 backdrop-blur-xl border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+            <div className="flex items-center justify-around px-8 py-2">
+              <button
+                onClick={() => setMemberPortalTab('cotisations')}
+                className={`flex flex-col items-center gap-1 py-1 px-5 rounded-2xl transition-all ${
+                  memberPortalTab === 'cotisations'
+                    ? 'text-emerald-600 font-bold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <div className={`p-2 rounded-xl transition-colors ${memberPortalTab === 'cotisations' ? 'bg-emerald-50' : ''}`}>
+                  <ClipboardList className="w-5 h-5" strokeWidth={memberPortalTab === 'cotisations' ? 2.5 : 2} />
+                </div>
+                <span className={`text-[11px] font-bold ${memberPortalTab === 'cotisations' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  Cotisations
+                </span>
+              </button>
+
+              <button
+                onClick={() => setMemberPortalTab('profil')}
+                className={`flex flex-col items-center gap-1 py-1 px-5 rounded-2xl transition-all ${
+                  memberPortalTab === 'profil'
+                    ? 'text-emerald-600 font-bold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <div className={`p-2 rounded-xl transition-colors ${memberPortalTab === 'profil' ? 'bg-emerald-50' : ''}`}>
+                  <User className="w-5 h-5" strokeWidth={memberPortalTab === 'profil' ? 2.5 : 2} />
+                </div>
+                <span className={`text-[11px] font-bold ${memberPortalTab === 'profil' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  Mon Profil
+                </span>
+              </button>
+            </div>
+          </nav>
+
+          {/* Receipt Modal */}
           <WaveReceiptModal
             isOpen={isReceiptOpen}
             onClose={() => setIsReceiptOpen(false)}
             paiement={receiptPayment}
+          />
+
+          <PwaInstallPrompt
+            deferredPrompt={deferredPrompt}
+            onInstall={handleInstallPwa}
           />
         </div>
       </div>

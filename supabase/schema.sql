@@ -14,12 +14,14 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
     role TEXT NOT NULL CHECK (role IN ('admin', 'tresorier', 'membre_bureau', 'membre')),
     mot_de_passe TEXT DEFAULT 'ajahb2026',
     photo TEXT,
+    membre_id UUID REFERENCES public.membres(id) ON DELETE SET NULL,
     actif BOOLEAN DEFAULT true,
     date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
 ALTER TABLE public.utilisateurs ADD COLUMN IF NOT EXISTS mot_de_passe TEXT DEFAULT 'ajahb2026';
 ALTER TABLE public.utilisateurs ADD COLUMN IF NOT EXISTS photo TEXT;
+ALTER TABLE public.utilisateurs ADD COLUMN IF NOT EXISTS membre_id UUID REFERENCES public.membres(id) ON DELETE SET NULL;
 ALTER TABLE public.utilisateurs DROP CONSTRAINT IF EXISTS utilisateurs_role_check;
 ALTER TABLE public.utilisateurs ADD CONSTRAINT utilisateurs_role_check CHECK (role IN ('admin', 'tresorier', 'membre_bureau', 'membre'));
 
