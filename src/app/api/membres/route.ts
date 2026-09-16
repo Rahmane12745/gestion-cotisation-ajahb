@@ -54,14 +54,24 @@ export async function POST(req: Request) {
       );
     }
 
+    // Calculer le prochain matricule disponible
+    const { data: allMembres } = await supabase.from('membres').select('matricule');
+    const maxNum = (allMembres || []).reduce((max, m) => {
+      const num = parseInt((m.matricule || '').replace(/[^0-9]/g, ''), 10);
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+    const calculatedMatricule = `MBR-${String(maxNum + 1).padStart(4, '0')}`;
+
     const { data: newMembre, error } = await supabase
       .from('membres')
       .insert([
         {
+          matricule: calculatedMatricule,
           nom: (data.nom || '').trim(),
+          surnom: (data.surnom || '').trim() || null,
           telephone: (data.telephone || '').trim(),
           quartier: (data.quartier || 'Non spécifié').trim(),
-          photo: data.photo,
+          photo: data.photo || null,
           actif: true,
         },
       ])
@@ -69,10 +79,32 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { success: false, error: error.message || 'Erreur lors de la création du membre' },
-        { status: 400 }
-      );
+      // En cas de conflit de clé unique (membres_matricule_key), réessayer avec un identifiant basé sur le timestamp
+      const fallbackMatricule = `MBR-${Date.now().toString().slice(-6)}`;
+      const { data: retryMembre, error: retryError } = await supabase
+        .from('membres')
+        .insert([
+          {
+            matricule: fallbackMatricule,
+            nom: (data.nom || '').trim(),
+            surnom: (data.surnom || '').trim() || null,
+            telephone: (data.telephone || '').trim(),
+            quartier: (data.quartier || 'Non spécifié').trim(),
+            photo: data.photo || null,
+            actif: true,
+          },
+        ])
+        .select()
+        .single();
+
+      if (retryError) {
+        return NextResponse.json(
+          { success: false, error: retryError.message || 'Erreur lors de la création du membre' },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({ success: true, membre: retryMembre });
     }
 
     return NextResponse.json({ success: true, membre: newMembre });
