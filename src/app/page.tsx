@@ -9,6 +9,7 @@ import { WaveMemberListTab } from '@/components/WaveMemberListTab';
 import { WaveMemberDetail } from '@/components/WaveMemberDetail';
 import { WaveJournal } from '@/components/WaveJournal';
 import { WaveGestionTab } from '@/components/WaveGestionTab';
+import { WaveMemberPortal } from '@/components/WaveMemberPortal';
 import { WavePaymentModal } from '@/components/WavePaymentModal';
 import { WaveMemberModal } from '@/components/WaveMemberModal';
 import { WaveReceiptModal } from '@/components/WaveReceiptModal';
@@ -27,14 +28,15 @@ import {
   ClipboardList,
   Settings,
   Plus,
+  User,
 } from 'lucide-react';
 
 export default function Home() {
-  const { isAuthenticated, isLoading: authLoading, loginWithEmail } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, role, loginWithEmail, logout } = useAuth();
   const { membresWithStats } = useData();
 
-  // Navigation: 4 tabs + central button
-  const [activeTab, setActiveTab] = useState<'home' | 'membres' | 'journal' | 'gestion'>('home');
+  // Navigation tab: 'home' | 'membres' | 'journal' | 'gestion' | 'portal'
+  const [activeTab, setActiveTab] = useState<'home' | 'membres' | 'journal' | 'gestion' | 'portal'>('home');
 
   // Selected member for detail view
   const [selectedMember, setSelectedMember] = useState<MembreWithStats | null>(null);
@@ -141,6 +143,22 @@ export default function Home() {
     return <LoginPage onLogin={loginWithEmail} isLoading={authLoading} />;
   }
 
+  // Si l'utilisateur connecté est un rôle "membre" simple, lui afficher le Portail Membre directement !
+  if (role === 'membre') {
+    return (
+      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-900 font-sans">
+        <div className="w-full max-w-md mx-auto min-h-screen bg-[#F5F6F8] flex flex-col shadow-2xl relative border-x border-slate-200/30 px-4 pt-4 pb-12">
+          <WaveMemberPortal onViewReceipt={handleViewReceipt} onLogout={logout} />
+          <WaveReceiptModal
+            isOpen={isReceiptOpen}
+            onClose={() => setIsReceiptOpen(false)}
+            paiement={receiptPayment}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const navItems = [
     { id: 'home' as const, label: 'Accueil', icon: LayoutDashboard },
     { id: 'membres' as const, label: 'Membres', icon: UsersIcon },
@@ -185,7 +203,20 @@ export default function Home() {
               onOpenAdmin={() => setIsAdminOpen(true)}
               onOpenExport={() => setIsExportOpen(true)}
               onOpenBroadcast={() => setIsBroadcastOpen(true)}
+              onOpenMyPortal={() => setActiveTab('portal')}
             />
+          )}
+
+          {activeTab === 'portal' && (
+            <div className="space-y-3">
+              <button
+                onClick={() => setActiveTab('gestion')}
+                className="text-xs font-black text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1 mb-2"
+              >
+                ← Retour au tableau de bord
+              </button>
+              <WaveMemberPortal onViewReceipt={handleViewReceipt} />
+            </div>
           )}
         </main>
 

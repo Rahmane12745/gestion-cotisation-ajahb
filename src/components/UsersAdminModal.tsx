@@ -57,7 +57,7 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn">
       <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all max-h-[90vh] flex flex-col animate-slideUp">
-        {/* Modal Header — Emerald Theme */}
+        {/* Modal Header */}
         <div className="bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 text-white p-4 sm:p-5 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-2xl bg-white/20 backdrop-blur shadow-sm">
@@ -65,7 +65,7 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
             </div>
             <div>
               <h3 className="font-black text-base sm:text-lg leading-tight">Administration des Rôles</h3>
-              <p className="text-xs text-emerald-100 font-medium">Contrôle d&apos;accès du comité du village</p>
+              <p className="text-xs text-emerald-100 font-medium">Contrôle d&apos;accès des membres du comité et membres du village</p>
             </div>
           </div>
           <button
@@ -81,7 +81,7 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
           {/* Create User Form */}
           <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-emerald-600" /> Ajouter un nouveau membre au comité
+              <UserPlus className="w-4 h-4 text-emerald-600" /> Ajouter un nouveau compte d&apos;accès
             </h4>
 
             {error && (
@@ -133,7 +133,8 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
                   >
                     <option value="admin">• Administrateur (Accès total)</option>
                     <option value="tresorier">• Trésorier (Cotisations & Dépenses)</option>
-                    <option value="membre_bureau">• Consultation (Lecture seule)</option>
+                    <option value="membre_bureau">• Bureau (Lecture seule)</option>
+                    <option value="membre">• Membre du village (Espace membre uniquement)</option>
                   </select>
                 </div>
 
@@ -187,7 +188,8 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
                       >
                         <option value="admin">Admin</option>
                         <option value="tresorier">Trésorier</option>
-                        <option value="membre_bureau">Consultation</option>
+                        <option value="membre_bureau">Bureau</option>
+                        <option value="membre">Membre</option>
                       </select>
 
                       {!isSelf && (

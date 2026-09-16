@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { formatMontant } from '@/lib/whatsappUtils';
 import {
   TrendingDown,
+  User,
   FileBarChart,
   Radio,
   Wallet,
@@ -20,6 +21,7 @@ interface WaveGestionTabProps {
   onOpenAdmin: () => void;
   onOpenExport: () => void;
   onOpenBroadcast: () => void;
+  onOpenMyPortal?: () => void;
 }
 
 export const WaveGestionTab: React.FC<WaveGestionTabProps> = ({
@@ -27,6 +29,7 @@ export const WaveGestionTab: React.FC<WaveGestionTabProps> = ({
   onOpenAdmin,
   onOpenExport,
   onOpenBroadcast,
+  onOpenMyPortal,
 }) => {
   const { stats, devise } = useData();
   const { isAdmin, isTresorier, role } = useAuth();
@@ -37,14 +40,24 @@ export const WaveGestionTab: React.FC<WaveGestionTabProps> = ({
 
   const actions = [
     {
+      id: 'my_portal',
+      label: 'Mon Espace Membre',
+      description: 'Consulter mes cotisations personnelles & reçus',
+      icon: User,
+      onClick: onOpenMyPortal,
+      visible: !!onOpenMyPortal,
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-700',
+    },
+    {
       id: 'depense',
       label: 'D\u00e9penses',
       description: 'Enregistrer une d\u00e9pense du village',
       icon: TrendingDown,
       onClick: onOpenDepense,
       visible: canManageExpenses,
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-700',
+      iconBg: 'bg-slate-100',
+      iconColor: 'text-slate-700',
     },
     {
       id: 'accounts',
@@ -161,7 +174,7 @@ export const WaveGestionTab: React.FC<WaveGestionTabProps> = ({
       {/* Role Info */}
       <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/50">
         <p className="text-xs text-slate-400 font-medium text-center">
-          Connect\u00e9 en tant que <span className="font-bold text-slate-600">{role === 'admin' ? 'Administrateur' : role === 'tresorier' ? 'Tr\u00e9sorier' : 'Bureau'}</span>
+          Connect\u00e9 en tant que <span className="font-bold text-slate-600">{role === 'admin' ? 'Administrateur' : role === 'tresorier' ? 'Tr\u00e9sorier' : role === 'membre' ? 'Membre' : 'Bureau'}</span>
         </p>
       </div>
     </div>
