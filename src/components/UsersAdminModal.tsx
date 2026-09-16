@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
 import { UserRole } from '@/types';
-import { ShieldCheck, UserPlus, X, Check, AlertCircle, Key } from 'lucide-react';
+import { ShieldCheck, UserPlus, X, Check, AlertCircle, Key, Users } from 'lucide-react';
 
 interface UsersAdminModalProps {
   isOpen: boolean;
@@ -15,7 +16,9 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
   onClose,
 }) => {
   const { users, addUser, updateUserRole, toggleUserStatus, currentUser } = useAuth();
+  const { membresWithStats } = useData();
 
+  const [selectedMembreId, setSelectedMembreId] = useState<string>('');
   const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('123456');
@@ -25,13 +28,25 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleSelectMembre = (membreId: string) => {
+    setSelectedMembreId(membreId);
+    if (!membreId) {
+      setNom('');
+      return;
+    }
+    const found = membresWithStats.find((m) => m.id === membreId);
+    if (found) {
+      setNom(found.nom);
+    }
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
     if (!nom.trim() || !email.trim()) {
-      setError('Tous les champs sont requis.');
+      setError('Veuillez renseigner le nom et l\'adresse email.');
       return;
     }
 
@@ -47,6 +62,7 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
       email: cleanEmail,
       role,
       mot_de_passe: password.trim() || '123456',
+      membre_id: selectedMembreId || undefined,
       actif: true,
     });
 
@@ -55,12 +71,13 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
       return;
     }
 
+    setSelectedMembreId('');
     setNom('');
     setEmail('');
     setPassword('123456');
     setRole('membre');
-    setSuccess(`Nouveau compte d'accès créé avec succès pour ${cleanEmail} ! Mot de passe : ${password.trim() || '123456'}`);
-    setTimeout(() => setSuccess(''), 5000);
+    setSuccess(`Compte d'accès créé avec succès pour ${cleanEmail} ! Mot de passe initial : ${password.trim() || '123456'}`);
+    setTimeout(() => setSuccess(''), 6000);
   };
 
   return (
@@ -107,9 +124,28 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
             )}
 
             <form onSubmit={handleCreateUser} className="space-y-3">
+              {/* Member Selector Dropdown */}
+              <div>
+                <label className="block text-[11px] font-extrabold uppercase text-slate-600 mb-1 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-emerald-600" /> Choisir un membre du village
+                </label>
+                <select
+                  value={selectedMembreId}
+                  onChange={(e) => handleSelectMembre(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-extrabold focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white cursor-pointer"
+                >
+                  <option value="">-- Sélectionner dans la liste des membres --</option>
+                  {membresWithStats.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nom} ({m.matricule}) {m.quartier ? `• ${m.quartier}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-extrabold uppercase text-slate-500 mb-1">Nom complet</label>
+                  <label className="block text-[11px] font-extrabold uppercase text-slate-500 mb-1">Nom complet sur le compte</label>
                   <input
                     type="text"
                     placeholder="Ex: Oumar Ndiaye"
@@ -121,7 +157,7 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-extrabold uppercase text-slate-500 mb-1">Email / Identifiant</label>
+                  <label className="block text-[11px] font-extrabold uppercase text-slate-500 mb-1">Email de connexion</label>
                   <input
                     type="email"
                     placeholder="oumar@village.org"

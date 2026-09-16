@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useData } from '@/context/DataContext';
-import { useAuth } from '@/context/AuthContext';
 import { Membre } from '@/types';
-import { UserPlus, UserCheck, Check, Camera, Trash2, Key, Mail, Lock } from 'lucide-react';
+import { UserPlus, UserCheck, Check, Camera, Trash2 } from 'lucide-react';
 
 interface WaveMemberModalProps {
   isOpen: boolean;
@@ -18,19 +17,12 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
   memberToEdit = null,
 }) => {
   const { addMembre, updateMembre } = useData();
-  const { addUser } = useAuth();
 
   const [nom, setNom] = useState('');
   const [surnom, setSurnom] = useState('');
   const [telephone, setTelephone] = useState('');
   const [quartier, setQuartier] = useState('');
   const [photo, setPhoto] = useState<string>('');
-
-  // Création accès membre
-  const [createAccess, setCreateAccess] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,18 +36,12 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
         setTelephone(memberToEdit.telephone || '');
         setQuartier(memberToEdit.quartier || '');
         setPhoto(memberToEdit.photo || '');
-        setCreateAccess(false);
-        setEmail('');
-        setPassword('');
       } else {
         setNom('');
         setSurnom('');
         setTelephone('');
         setQuartier('');
         setPhoto('');
-        setCreateAccess(true);
-        setEmail('');
-        setPassword('');
       }
       setError('');
     }
@@ -90,14 +76,9 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
       return;
     }
 
-    if (createAccess && email.trim() && !password.trim()) {
-      setError('Veuillez définir un mot de passe initial pour le membre.');
-      return;
-    }
-
     setIsSubmitting(true);
 
-    let res: { success: boolean; error?: string; data?: Membre };
+    let res: { success: boolean; error?: string };
 
     if (memberToEdit) {
       res = await updateMembre(memberToEdit.id, {
@@ -115,18 +96,6 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
         quartier: quartier.trim() || undefined,
         photo: photo || undefined,
       });
-
-      // Si création d'accès web/mobile demandé
-      if (res.success && createAccess && email.trim()) {
-        await addUser({
-          nom: nom.trim(),
-          email: email.trim().toLowerCase(),
-          role: 'membre',
-          mot_de_passe: password.trim() || '123456',
-          photo: photo || undefined,
-          actif: true,
-        });
-      }
     }
 
     setIsSubmitting(false);
@@ -141,7 +110,7 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden animate-slideUp max-h-[92vh] flex flex-col">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden animate-slideUp">
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center gap-2">
@@ -153,7 +122,7 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
                 {memberToEdit ? 'Modifier le Membre' : 'Nouveau Membre'}
               </h3>
               <p className="text-xs text-slate-500">
-                {memberToEdit ? `Matricule ${memberToEdit.matricule}` : 'Ajout membre & création d\'accès'}
+                {memberToEdit ? `Matricule ${memberToEdit.matricule}` : 'Ajout membre avec photo'}
               </p>
             </div>
           </div>
@@ -166,7 +135,7 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl font-semibold">
               {error}
@@ -270,59 +239,6 @@ export const WaveMemberModal: React.FC<WaveMemberModalProps> = ({
               className="w-full px-4 py-3 rounded-2xl bg-slate-100 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white border border-transparent font-medium"
             />
           </div>
-
-          {/* Accès application membre (uniquement lors de l'ajout d'un nouveau membre) */}
-          {!memberToEdit && (
-            <div className="bg-emerald-50/80 rounded-2xl p-3.5 border border-emerald-200/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-emerald-900 flex items-center gap-1.5">
-                  <Key className="w-4 h-4 text-emerald-700" /> Créer un accès mobile pour ce membre
-                </span>
-                <input
-                  type="checkbox"
-                  checked={createAccess}
-                  onChange={(e) => setCreateAccess(e.target.checked)}
-                  className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
-                />
-              </div>
-
-              {createAccess && (
-                <div className="space-y-2.5 pt-1">
-                  <div>
-                    <label className="text-[10px] font-extrabold text-emerald-800 uppercase block mb-1">
-                      Email de connexion du membre
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-3.5 h-3.5 text-emerald-600 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        placeholder="Ex: cheikh@ajahb.org"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-white text-slate-900 text-xs border border-emerald-200 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-extrabold text-emerald-800 uppercase block mb-1">
-                      Mot de passe initial (qu'il pourra changer)
-                    </label>
-                    <div className="relative">
-                      <Lock className="w-3.5 h-3.5 text-emerald-600 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        placeholder="Ex: 123456"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-white text-slate-900 text-xs border border-emerald-200 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           <div className="pt-2">
             <button
