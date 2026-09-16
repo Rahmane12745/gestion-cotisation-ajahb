@@ -6,6 +6,8 @@ export interface UserProfile {
   nom: string;
   role: UserRole;
   actif: boolean;
+  photo?: string;
+  mot_de_passe?: string;
   date_creation?: string;
 }
 
@@ -23,7 +25,7 @@ export interface Membre {
   date_creation: string;
 }
 
-export type ModePaiement = 'Espèces' | 'Wave' | 'Orange Money' | 'Virement' | 'Chèque';
+export type ModePaiement = 'Esp\u00e8ces' | 'Wave' | 'Orange Money' | 'Virement' | 'Ch\u00e8que';
 
 export interface Paiement {
   id: string;
@@ -36,7 +38,6 @@ export interface Paiement {
   reference_recu?: string;
   remarque?: string;
   date_creation?: string;
-  // Joined or calculated field
   membre?: Membre;
 }
 
@@ -45,7 +46,7 @@ export interface Depense {
   motif: string;
   montant: number;
   date_depense: string;
-  categorie?: string; // e.g. 'Réunion', 'Événement', 'Aide Sociale', 'Matériel'
+  categorie?: string;
   enregistre_par: string;
   remarque?: string;
   date_creation?: string;

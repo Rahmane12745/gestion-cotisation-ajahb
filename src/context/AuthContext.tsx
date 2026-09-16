@@ -22,13 +22,13 @@ interface AuthContextType {
   addUser: (user: Omit<UserProfile, 'id' | 'date_creation'> & { mot_de_passe?: string }) => Promise<boolean>;
   updateUserRole: (id: string, role: UserRole) => Promise<boolean>;
   toggleUserStatus: (id: string) => Promise<boolean>;
+  updateProfile: (updates: { nom?: string; email?: string; photo?: string; mot_de_passe?: string }) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const SESSION_KEY = 'ajahb_session';
 
-// Mots de passe par défaut pour le mode démo/fallback local
 const DEMO_PASSWORDS: Record<string, string> = {
   'admin@ajahb.org': 'admin123',
   'tresorier@ajahb.org': 'tresor123',
@@ -40,7 +40,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restaurer la session au chargement
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -50,7 +49,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedSession = localStorage.getItem(SESSION_KEY);
         if (savedSession) {
           const parsed = JSON.parse(savedSession);
-          // Vérifier que l'utilisateur existe
           if (isSupabaseConfigured() && supabase) {
             const { data } = await supabase
               .from('utilisateurs')
@@ -64,7 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.removeItem(SESSION_KEY);
             }
           } else {
-            // Mode démo / local
             const found = INITIAL_USERS.find(
               (u) => u.email === parsed.email && u.actif
             );
@@ -76,7 +73,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        // Charger la liste des utilisateurs
         if (isSupabaseConfigured() && supabase) {
           const { data } = await supabase.from('utilisateurs').select('*');
           if (data && data.length > 0) {
@@ -106,7 +102,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cleanEmail = email.trim().toLowerCase();
 
       if (isSupabaseConfigured() && supabase) {
-        // Recherche dans Supabase
         const { data, error } = await supabase
           .from('utilisateurs')
           .select('*')
@@ -115,11 +110,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         if (error || !data) {
-          // Si l'utilisateur n'existe pas encore dans Supabase mais est un user démo, essayer avec la logique démo
           const demoUser = INITIAL_USERS.find((u) => u.email.toLowerCase() === cleanEmail);
           const expectedPass = DEMO_PASSWORDS[cleanEmail];
           if (demoUser && expectedPass && password === expectedPass) {
-            // Insérer automatiquement cet utilisateur dans Supabase !
             const { data: inserted } = await supabase
               .from('utilisateurs')
               .insert([{
@@ -140,7 +133,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false, error: 'Email ou mot de passe incorrect.' };
         }
 
-        // Vérifier mot de passe Supabase
         if (data.mot_de_passe && data.mot_de_passe !== password) {
           return { success: false, error: 'Email ou mot de passe incorrect.' };
         }
@@ -150,7 +142,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem(SESSION_KEY, JSON.stringify({ email: user.email }));
         return { success: true };
       } else {
-        // Mode démo local
         const found = INITIAL_USERS.find(
           (u) => u.email.toLowerCase() === cleanEmail
         );
@@ -158,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false, error: 'Email ou mot de passe incorrect.' };
         }
         if (!found.actif) {
-          return { success: false, error: 'Ce compte a été désactivé.' };
+          return { success: false, error: 'Ce compte a \u00e9t\u00e9 d\u00e9sactiv\u00e9.' };
         }
         const expectedPassword = DEMO_PASSWORDS[found.email] || '123456';
         if (password !== expectedPassword) {
@@ -170,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (err) {
       console.error('Erreur de connexion:', err);
-      return { success: false, error: 'Erreur de connexion. Réessayez.' };
+      return { success: false, error: 'Erreur de connexion. R\u00e9essayez.' };
     }
   }, []);
 
@@ -237,7 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const user = users.find((u) => u.id === id);
       if (!user) return false;
-      
+
       if (isSupabaseConfigured() && supabase) {
         const { error } = await supabase
           .from('utilisateurs')
@@ -251,6 +242,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
   }, [users]);
+
+  const updateProfile = useCallback(async (updates: { nom?: string; email?: string; photo?: string; mot_de_passe?: string }): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) return { success: false, error: 'Non connect\u00e9' };
+
+    try {
+      const payload: Record<string, any> = {};
+      if (updates.nom) payload.nom = updates.nom.trim();
+      if (updates.email) payload.email = updates.email.trim().toLowerCase();
+      if (updates.photo !== undefined) payload.photo = updates.photo;
+      if (updates.mot_de_passe) payload.mot_de_passe = updates.mot_de_passe;
+
+      if (isSupabaseConfigured() && supabase) {
+        const { error } = await supabase
+          .from('utilisateurs')
+          .update(payload)
+          .eq('id', currentUser.id);
+
+        if (error) {
+          console.error('Erreur Supabase updateProfile:', error);
+          return { success: false, error: 'Impossible de mettre \u00e0 jour le profil.' };
+        }
+      }
+
+      const updatedUser: UserProfile = { ...currentUser, ...payload };
+      setCurrentUser(updatedUser);
+      setUsers((prev) => prev.map((u) => u.id === currentUser.id ? updatedUser : u));
+
+      if (updates.email) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ email: updates.email.trim().toLowerCase() }));
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('Erreur updateProfile:', err);
+      return { success: false, error: 'Erreur lors de la mise \u00e0 jour.' };
+    }
+  }, [currentUser]);
 
   const isAuthenticated = currentUser !== null;
   const role: UserRole = currentUser?.role || 'membre_bureau';
@@ -280,6 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addUser,
         updateUserRole,
         toggleUserStatus,
+        updateProfile,
       }}
     >
       {children}

@@ -12,6 +12,7 @@ import { WaveGestionTab } from '@/components/WaveGestionTab';
 import { WavePaymentModal } from '@/components/WavePaymentModal';
 import { WaveMemberModal } from '@/components/WaveMemberModal';
 import { WaveReceiptModal } from '@/components/WaveReceiptModal';
+import { ProfileModal } from '@/components/ProfileModal';
 import { ExportModal } from '@/components/ExportModal';
 import { UsersAdminModal } from '@/components/UsersAdminModal';
 import { BroadcastModal } from '@/components/BroadcastModal';
@@ -53,6 +54,7 @@ export default function Home() {
   const [receiptPayment, setReceiptPayment] = useState<Paiement | null>(null);
 
   const [isDepenseModalOpen, setIsDepenseModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
@@ -151,6 +153,7 @@ export default function Home() {
       <div className="w-full max-w-md mx-auto min-h-screen bg-[#F5F6F8] flex flex-col shadow-2xl relative border-x border-slate-200/30">
         {/* Header */}
         <WaveHeader
+          onOpenProfile={() => setIsProfileOpen(true)}
           deferredPrompt={deferredPrompt}
           onInstallPwa={handleInstallPwa}
         />
@@ -186,10 +189,9 @@ export default function Home() {
           )}
         </main>
 
-        {/* Bottom Navigation — 5 items: 2 tabs + central button + 2 tabs */}
+        {/* Bottom Navigation */}
         <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-40 bg-white/98 backdrop-blur-xl border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
           <div className="flex items-center justify-around px-2 py-1.5">
-            {/* Left tabs: Accueil, Membres */}
             {navItems.slice(0, 2).map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -228,7 +230,6 @@ export default function Home() {
               <span className="text-[10px] font-bold text-slate-400 mt-0.5">Encaisser</span>
             </button>
 
-            {/* Right tabs: Historique, Gestion */}
             {navItems.slice(2, 4).map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -268,6 +269,12 @@ export default function Home() {
             onOpenSanction={(m) => handleOpenSanction(m)}
           />
         )}
+
+        {/* Profile Modal */}
+        <ProfileModal
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+        />
 
         {/* Modals */}
         <WavePaymentModal
