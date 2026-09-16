@@ -42,22 +42,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isLoading }) => {
   return (
     <div className="min-h-screen flex flex-col bg-[#0f172a]">
       <div className="w-full max-w-md mx-auto min-h-screen flex flex-col shadow-2xl relative border-x border-slate-800">
-        {/* Partie haute — Gradient hero */}
-        <div className="relative bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-400 px-6 pt-16 pb-12 flex flex-col items-center overflow-hidden">
-          {/* Cercles décoratifs */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/3 -translate-x-1/4" />
+        {/* Partie haute — Photo du Village Hero avec overlay vert */}
+        <div className="relative min-h-[230px] px-6 pt-14 pb-14 flex flex-col items-center justify-center overflow-hidden">
+          {/* Image du Village */}
+          <img
+            src="/village.jpg"
+            alt="Photo du Village AJAHB"
+            className="absolute inset-0 w-full h-full object-cover scale-105"
+          />
+          {/* Overlay vert gradient */}
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-emerald-950/80 to-emerald-900/95" />
           
           {/* Icône shield */}
-          <div className="relative z-10 w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mb-5 shadow-lg animate-[popIn_0.6s_ease-out]">
-            <Shield className="w-10 h-10 text-white" strokeWidth={1.5} />
+          <div className="relative z-10 w-20 h-20 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center mb-4 shadow-xl border border-white/30 animate-[popIn_0.6s_ease-out]">
+            <Shield className="w-10 h-10 text-white" strokeWidth={1.8} />
           </div>
           
           {/* Titre */}
-          <h1 className="relative z-10 text-white text-2xl font-black tracking-tight text-center animate-[slideUp_0.5s_ease-out]">
+          <h1 className="relative z-10 text-white text-2xl sm:text-3xl font-black tracking-tight text-center drop-shadow-md animate-[slideUp_0.5s_ease-out]">
             AJAHB
           </h1>
-          <p className="relative z-10 text-emerald-100 text-sm mt-1 text-center animate-[slideUp_0.6s_ease-out]">
+          <p className="relative z-10 text-emerald-100 text-xs sm:text-sm font-bold mt-1 text-center animate-[slideUp_0.6s_ease-out]">
             Registre des Cotisations du Village
           </p>
         </div>

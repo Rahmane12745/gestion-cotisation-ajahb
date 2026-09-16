@@ -294,37 +294,18 @@ export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
         </div>
       )}
 
-      {/* 3. Onglet 2 : Notifications & Reçus de validation avec Photo du Village */}
+      {/* 3. Onglet 2 : Notifications & Reçus de validation */}
       {portalTab === 'notifications' && (
-        <div className="space-y-4">
-          {/* Bannière Photo du Village */}
-          <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 min-h-[140px] flex items-end p-4 text-white">
-            <img
-              src="/village.jpg"
-              alt="Photo du Village AJAHB"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent" />
-
-            <div className="relative z-10 space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-slate-900/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                {nomVillage} • Portail Officiel
-              </span>
-              <h3 className="text-lg font-black text-white leading-tight">
-                Notifications & Validations
-              </h3>
-              <p className="text-xs text-slate-200 font-medium">
-                Appuyez sur une notification pour afficher la totalité des informations et votre reçu.
-              </p>
-            </div>
-          </div>
-
+        <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">
-              Historique des validations ({memberPaiementsSorted.length})
-            </h4>
-            <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              Cliquez pour le reçu
+            <div>
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Bell className="w-4.5 h-4.5 text-emerald-600" /> Notifications & Validations
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">Validations de vos cotisations du village en temps réel</p>
+            </div>
+            <span className="text-xs font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              {memberPaiementsSorted.length} reçu(s)
             </span>
           </div>
 
