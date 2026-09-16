@@ -19,7 +19,7 @@ interface AuthContextType {
   canManageUsers: boolean;
   loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  addUser: (user: Omit<UserProfile, 'id' | 'date_creation'> & { mot_de_passe?: string }) => Promise<{ success: boolean; error?: string }>;
+  addUser: (user: Omit<UserProfile, 'id' | 'date_creation'> & { mot_de_passe?: string; membre_id?: string }) => Promise<{ success: boolean; error?: string }>;
   updateUserRole: (id: string, role: UserRole) => Promise<boolean>;
   toggleUserStatus: (id: string) => Promise<boolean>;
   updateProfile: (updates: { nom?: string; email?: string; photo?: string; mot_de_passe?: string }) => Promise<{ success: boolean; error?: string }>;
@@ -175,23 +175,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const addUser = useCallback(async (
-    newUser: Omit<UserProfile, 'id' | 'date_creation'> & { mot_de_passe?: string }
+    newUser: Omit<UserProfile, 'id' | 'date_creation'> & { mot_de_passe?: string; membre_id?: string }
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       const cleanEmail = newUser.email.trim().toLowerCase();
       const cleanPassword = (newUser.mot_de_passe || '123456').trim();
 
       if (isSupabaseConfigured() && supabase) {
+        const payload: Record<string, any> = {
+          email: cleanEmail,
+          nom: newUser.nom.trim(),
+          role: newUser.role,
+          mot_de_passe: cleanPassword,
+          photo: newUser.photo || undefined,
+          actif: newUser.actif ?? true,
+        };
+        if (newUser.membre_id) payload.membre_id = newUser.membre_id;
+
         const { data, error } = await supabase
           .from('utilisateurs')
-          .insert([{
-            email: cleanEmail,
-            nom: newUser.nom.trim(),
-            role: newUser.role,
-            mot_de_passe: cleanPassword,
-            photo: newUser.photo || undefined,
-            actif: newUser.actif ?? true,
-          }])
+          .insert([payload])
           .select()
           .single();
 
