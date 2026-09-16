@@ -42,7 +42,7 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
       return;
     }
 
-    const ok = await addUser({
+    const res = await addUser({
       nom: nom.trim(),
       email: cleanEmail,
       role,
@@ -50,8 +50,8 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
       actif: true,
     });
 
-    if (!ok) {
-      setError('Erreur lors de la création du compte.');
+    if (!res.success) {
+      setError(res.error || 'Erreur lors de la création du compte.');
       return;
     }
 
@@ -94,8 +94,9 @@ export const UsersAdminModal: React.FC<UsersAdminModalProps> = ({
             </h4>
 
             {error && (
-              <div className="mb-3 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
+              <div className="mb-3 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold leading-relaxed flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 

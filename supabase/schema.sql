@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
     nom TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('admin', 'tresorier', 'membre_bureau')),
+    role TEXT NOT NULL CHECK (role IN ('admin', 'tresorier', 'membre_bureau', 'membre')),
     mot_de_passe TEXT DEFAULT 'ajahb2026',
     photo TEXT,
     actif BOOLEAN DEFAULT true,
@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
 
 ALTER TABLE public.utilisateurs ADD COLUMN IF NOT EXISTS mot_de_passe TEXT DEFAULT 'ajahb2026';
 ALTER TABLE public.utilisateurs ADD COLUMN IF NOT EXISTS photo TEXT;
+ALTER TABLE public.utilisateurs DROP CONSTRAINT IF EXISTS utilisateurs_role_check;
+ALTER TABLE public.utilisateurs ADD CONSTRAINT utilisateurs_role_check CHECK (role IN ('admin', 'tresorier', 'membre_bureau', 'membre'));
 
 -- 3. Séquence pour numéro matricule membre (ex: MBR-0001)
 CREATE SEQUENCE IF NOT EXISTS membre_seq START 1;

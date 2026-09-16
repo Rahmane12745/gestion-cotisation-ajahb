@@ -19,7 +19,7 @@ interface AuthContextType {
   canManageUsers: boolean;
   loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  addUser: (user: Omit<UserProfile, 'id' | 'date_creation'> & { mot_de_passe?: string }) => Promise<boolean>;
+  addUser: (user: Omit<UserProfile, 'id' | 'date_creation'> & { mot_de_passe?: string }) => Promise<{ success: boolean; error?: string }>;
   updateUserRole: (id: string, role: UserRole) => Promise<boolean>;
   toggleUserStatus: (id: string) => Promise<boolean>;
   updateProfile: (updates: { nom?: string; email?: string; photo?: string; mot_de_passe?: string }) => Promise<{ success: boolean; error?: string }>;
@@ -134,7 +134,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false, error: 'Email non trouvé ou compte inactif.' };
         }
 
-        // Vérification mot de passe
         const userPasswordInDb = data.mot_de_passe || '123456';
         if (userPasswordInDb !== cleanPassword && cleanPassword !== '123456' && cleanPassword !== 'ajahb2026') {
           return { success: false, error: 'Mot de passe incorrect.' };
@@ -177,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addUser = useCallback(async (
     newUser: Omit<UserProfile, 'id' | 'date_creation'> & { mot_de_passe?: string }
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const cleanEmail = newUser.email.trim().toLowerCase();
       const cleanPassword = (newUser.mot_de_passe || '123456').trim();
@@ -198,11 +197,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (error) {
           console.error('Erreur Supabase addUser:', error);
-          return false;
+          if (error.code === '23505') {
+            return { success: false, error: 'Un compte avec cet email existe déjà.' };
+          }
+          if (error.message && error.message.includes('utilisateurs_role_check')) {
+            return { success: false, error: 'La contrainte Rôle PostgreSQL dans Supabase bloque le rôle "membre". Exécutez le script SQL de mise à jour.' };
+          }
+          return { success: false, error: error.message || 'Erreur lors de la création sur Supabase.' };
         }
 
         setUsers((prev) => [...prev, data as UserProfile]);
-        return true;
+        return { success: true };
       } else {
         const userWithId: UserProfile = {
           ...newUser,
@@ -212,11 +217,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           date_creation: new Date().toISOString(),
         };
         setUsers((prev) => [...prev, userWithId]);
-        return true;
+        return { success: true };
       }
     } catch (err) {
       console.error('Erreur addUser:', err);
-      return false;
+      return { success: false, error: 'Erreur lors de la création du compte.' };
     }
   }, []);
 
