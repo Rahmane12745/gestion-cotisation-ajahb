@@ -19,6 +19,7 @@ import { UsersAdminModal } from '@/components/UsersAdminModal';
 import { BroadcastModal } from '@/components/BroadcastModal';
 import { SanctionModal } from '@/components/SanctionModal';
 import { DepenseModal } from '@/components/DepenseModal';
+import { ProjetsSpeciauxModal } from '@/components/ProjetsSpeciauxModal';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 import { LoginPage } from '@/components/LoginPage';
 import { MembreWithStats, Paiement, Membre } from '@/types';
@@ -62,6 +63,7 @@ export default function Home() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+  const [isProjetsOpen, setIsProjetsOpen] = useState(false);
 
   // PWA Prompt
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -282,6 +284,7 @@ export default function Home() {
               onOpenAdmin={() => setIsAdminOpen(true)}
               onOpenExport={() => setIsExportOpen(true)}
               onOpenBroadcast={() => setIsBroadcastOpen(true)}
+              onOpenProjets={() => setIsProjetsOpen(true)}
               onOpenMyPortal={() => setActiveTab('portal')}
             />
           )}
@@ -431,6 +434,11 @@ export default function Home() {
         <UsersAdminModal
           isOpen={isAdminOpen}
           onClose={() => setIsAdminOpen(false)}
+        />
+
+        <ProjetsSpeciauxModal
+          isOpen={isProjetsOpen}
+          onClose={() => setIsProjetsOpen(false)}
         />
 
         <PwaInstallPrompt

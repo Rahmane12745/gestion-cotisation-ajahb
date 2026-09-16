@@ -5,6 +5,7 @@ import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import { MembreWithStats, Paiement } from '@/types';
 import { formatMoisFrancais, formatMontant, formatTelephoneWhatsApp, genererTexteRecu, partagerSurWhatsApp } from '@/lib/whatsappUtils';
+import { exporterFicheMembrePDF } from '@/lib/exportUtils';
 import {
   X,
   Phone,
@@ -19,6 +20,7 @@ import {
   Edit2,
   ShieldAlert,
   AlertTriangle,
+  Download,
 } from 'lucide-react';
 
 interface WaveMemberDetailProps {
@@ -310,14 +312,24 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
             </div>
           </div>
 
-          {/* WhatsApp Share Full Recap CTA */}
-          <button
-            onClick={handleSendFullRecap}
-            className="w-full py-3 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20ba59] active:scale-98 text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all"
-          >
-            <MessageCircle className="w-4 h-4 fill-white" />
-            <span>Envoyer le relevé complet sur WhatsApp</span>
-          </button>
+          {/* Action CTAs: WhatsApp & PDF Export */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              onClick={handleSendFullRecap}
+              className="w-full py-3 px-3 rounded-2xl bg-[#25D366] hover:bg-[#20ba59] active:scale-98 text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition-all"
+            >
+              <MessageCircle className="w-4 h-4 fill-white" />
+              <span>Relevé WhatsApp</span>
+            </button>
+
+            <button
+              onClick={() => exporterFicheMembrePDF(membre, membre.paiements, yearFilter, nomVillage, devise)}
+              className="w-full py-3 px-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Download className="w-4 h-4" />
+              <span>Télécharger Fiche PDF</span>
+            </button>
+          </div>
 
           {/* Month-by-Month Detail List */}
           <div className="space-y-2 pt-1">

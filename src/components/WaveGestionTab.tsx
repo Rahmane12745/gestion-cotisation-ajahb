@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
+  Target,
 } from 'lucide-react';
 
 interface WaveGestionTabProps {
@@ -21,6 +22,7 @@ interface WaveGestionTabProps {
   onOpenAdmin: () => void;
   onOpenExport: () => void;
   onOpenBroadcast: () => void;
+  onOpenProjets?: () => void;
   onOpenMyPortal?: () => void;
 }
 
@@ -29,6 +31,7 @@ export const WaveGestionTab: React.FC<WaveGestionTabProps> = ({
   onOpenAdmin,
   onOpenExport,
   onOpenBroadcast,
+  onOpenProjets,
   onOpenMyPortal,
 }) => {
   const { stats, devise } = useData();
@@ -39,6 +42,16 @@ export const WaveGestionTab: React.FC<WaveGestionTabProps> = ({
   const canManageAccounts = isAdmin;
 
   const actions = [
+    {
+      id: 'projets',
+      label: 'Projets & Collectes Spéciales',
+      description: 'Projets du village (Puits, Événements, Travaux)',
+      icon: Target,
+      onClick: onOpenProjets,
+      visible: !!onOpenProjets,
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-700',
+    },
     {
       id: 'my_portal',
       label: 'Mon Espace Membre',
@@ -51,8 +64,8 @@ export const WaveGestionTab: React.FC<WaveGestionTabProps> = ({
     },
     {
       id: 'depense',
-      label: 'D\u00e9penses',
-      description: 'Enregistrer une d\u00e9pense du village',
+      label: 'Dépenses',
+      description: 'Enregistrer une dépense du village',
       icon: TrendingDown,
       onClick: onOpenDepense,
       visible: canManageExpenses,
@@ -62,7 +75,7 @@ export const WaveGestionTab: React.FC<WaveGestionTabProps> = ({
     {
       id: 'accounts',
       label: 'Gestion des Comptes',
-      description: 'G\u00e9rer les utilisateurs et acc\u00e8s',
+      description: 'Gérer les utilisateurs et accès',
       icon: ShieldCheck,
       onClick: onOpenAdmin,
       visible: canManageAccounts,
@@ -72,7 +85,7 @@ export const WaveGestionTab: React.FC<WaveGestionTabProps> = ({
     {
       id: 'export',
       label: 'Exports PDF',
-      description: 'T\u00e9l\u00e9charger les rapports et bilans',
+      description: 'Télécharger les rapports et bilans',
       icon: FileBarChart,
       onClick: onOpenExport,
       visible: true,

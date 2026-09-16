@@ -75,6 +75,28 @@ CREATE TABLE IF NOT EXISTS public.depenses (
 
 CREATE INDEX IF NOT EXISTS idx_depenses_date ON public.depenses(date_depense DESC);
 
+-- 7. Table des PROJETS SPÉCIAUX / COTISATIONS EXCEPTIONNELLES
+CREATE TABLE IF NOT EXISTS public.projets_speciaux (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    titre TEXT NOT NULL,
+    description TEXT,
+    objectif_montant NUMERIC(12, 2) NOT NULL CHECK (objectif_montant > 0),
+    collecte_actuelle NUMERIC(12, 2) DEFAULT 0,
+    statut TEXT DEFAULT 'en_cours' CHECK (statut IN ('en_cours', 'termine')),
+    date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
+
+CREATE TABLE IF NOT EXISTS public.cotisations_projets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    projet_id UUID NOT NULL REFERENCES public.projets_speciaux(id) ON DELETE CASCADE,
+    membre_id UUID NOT NULL REFERENCES public.membres(id) ON DELETE CASCADE,
+    montant NUMERIC(12, 2) NOT NULL CHECK (montant > 0),
+    date_paiement TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
+    encaisseur TEXT NOT NULL,
+    mode_paiement TEXT DEFAULT 'Espèces',
+    date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
+);
+
 -- ====================================================================
 -- ACTIVATION RLS AVEC POLITIQUES ACCÈS PUBLIC
 -- ====================================================================
@@ -83,6 +105,8 @@ ALTER TABLE public.utilisateurs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.membres ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.paiements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.depenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.projets_speciaux ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cotisations_projets ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow public utilisateurs" ON public.utilisateurs;
 CREATE POLICY "Allow public utilisateurs" ON public.utilisateurs FOR ALL USING (true) WITH CHECK (true);
@@ -96,6 +120,12 @@ CREATE POLICY "Allow public paiements" ON public.paiements FOR ALL USING (true) 
 DROP POLICY IF EXISTS "Allow public depenses" ON public.depenses;
 CREATE POLICY "Allow public depenses" ON public.depenses FOR ALL USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow public projets_speciaux" ON public.projets_speciaux;
+CREATE POLICY "Allow public projets_speciaux" ON public.projets_speciaux FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public cotisations_projets" ON public.cotisations_projets;
+CREATE POLICY "Allow public cotisations_projets" ON public.cotisations_projets FOR ALL USING (true) WITH CHECK (true);
+
 -- ====================================================================
 -- DONNÉES INITIALES DE DÉMARRAGE
 -- ====================================================================
@@ -105,3 +135,4 @@ VALUES
   ('tresorier@ajahb.org', 'Amadou Sow (Trésorier)', 'tresorier', 'tresor123', true),
   ('bureau@ajahb.org', 'Fatou Ndiaye (Secrétaire)', 'membre_bureau', 'bureau123', true)
 ON CONFLICT (email) DO NOTHING;
+

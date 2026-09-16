@@ -500,3 +500,179 @@ export const exporterRapportFinancierBudgetPDF = (
   doc.save(`AJAHB_Bilan_Financier_${dateStr}.pdf`);
 };
 
+/**
+ * 5. FICHE INDIVIDUELLE MEMBRE (PDF) - AJAHB
+ * Génère la carte/fiche de cotisation individuelle d'un membre pour l'année
+ */
+export const exporterFicheMembrePDF = (
+  membre: MembreWithStats,
+  paiements: Paiement[],
+  annee: string,
+  nomVillage = 'AJAHB',
+  devise = 'F'
+) => {
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const dateGeneration = new Date().toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const paiementsMembre = paiements.filter(
+    (p) => p.membre_id === membre.id && p.mois.startsWith(annee)
+  );
+  const totalPaye = paiementsMembre.reduce((sum, p) => sum + Number(p.montant), 0);
+
+  // En-tête officiel
+  doc.setFillColor(5, 150, 105);
+  doc.rect(0, 0, 210, 6, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor(5, 150, 105);
+  doc.text(nomVillage.toUpperCase(), 14, 19);
+
+  doc.setFontSize(9.5);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Registre Numérique & Fiche de Cotisation Individuelle', 14, 25);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`FICHE COMPTABLE DU MEMBRE (${annee})`, 14, 35);
+
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Document officiel généré le ${dateGeneration}`, 14, 40);
+
+  // Cadre Profil Membre
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(14, 44, 182, 32, 2, 2, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`${membre.nom} ${membre.surnom ? `(${membre.surnom})` : ''}`, 20, 52);
+
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Matricule : ${membre.matricule}`, 20, 59);
+  doc.text(`Téléphone : ${membre.telephone}`, 20, 66);
+  doc.text(`Quartier : ${membre.quartier || 'Non renseigné'}`, 20, 72);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(5, 150, 105);
+  doc.text(`Total versé (${annee}) : ${formatMontant(totalPaye, devise)}`, 115, 59);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Mois réglés : ${paiementsMembre.length} sur 12`, 115, 66);
+
+  if (membre.sanction) {
+    doc.setTextColor(225, 29, 72);
+    doc.text(`Sanction active : ${membre.sanction}`, 115, 72);
+  }
+
+  // Tableau des 12 Mois
+  const moisNoms = [
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+  ];
+
+  const tableData = moisNoms.map((mNom, index) => {
+    const moisCode = `${annee}-${String(index + 1).padStart(2, '0')}`;
+    const payRecord = paiementsMembre.find((p) => p.mois === moisCode);
+
+    return [
+      index + 1,
+      `${mNom} ${annee}`,
+      payRecord ? 'PAYÉ' : 'EN RETARD',
+      payRecord ? formatMontant(payRecord.montant, devise) : '-',
+      payRecord ? payRecord.mode_paiement || 'Espèces' : '-',
+      payRecord ? new Date(payRecord.date_paiement).toLocaleDateString('fr-FR') : '-',
+      payRecord ? payRecord.encaisseur : '-',
+      payRecord ? (payRecord.reference_recu || payRecord.id.slice(0, 8).toUpperCase()) : '-',
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 82,
+    margin: { left: 14, right: 14 },
+    tableWidth: 182,
+    head: [['N°', 'Mois', 'Statut', 'Montant', 'Mode', 'Date Versement', 'Encaisseur', 'N° Reçu']],
+    body: tableData,
+    theme: 'grid',
+    styles: {
+      overflow: 'linebreak',
+      cellPadding: 2,
+    },
+    headStyles: {
+      fillColor: [5, 150, 105],
+      textColor: 255,
+      fontSize: 8,
+      fontStyle: 'bold',
+    },
+    bodyStyles: {
+      fontSize: 7.5,
+      textColor: [30, 41, 59],
+    },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 32 },
+      2: { cellWidth: 22, halign: 'center' },
+      3: { cellWidth: 22, halign: 'right' },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 24 },
+      6: { cellWidth: 26 },
+      7: { cellWidth: 28 },
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.column.index === 2) {
+        if (data.cell.raw === 'PAYÉ') {
+          data.cell.styles.textColor = [5, 150, 105];
+          data.cell.styles.fontStyle = 'bold';
+        } else {
+          data.cell.styles.textColor = [225, 29, 72];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    },
+    didDrawPage: (data) => {
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text(
+        `AJAHB • Fiche Membre ${membre.matricule} • Page ${data.pageNumber} sur ${pageCount}`,
+        14,
+        290
+      );
+    },
+  });
+
+  // Bloc de signature
+  const finalY = (doc as any).lastAutoTable.finalY + 14;
+  if (finalY < 265) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text('Le Trésorier Général', 25, finalY);
+    doc.text('Le Membre (Émargement)', 135, finalY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text('(Signature & Cachet)', 25, finalY + 4);
+    doc.text('(Signature pour réception)', 135, finalY + 4);
+  }
+
+  const dateStr = new Date().toISOString().split('T')[0];
+  doc.save(`AJAHB_Fiche_${membre.matricule}_${annee}_${dateStr}.pdf`);
+};
+
+

@@ -81,3 +81,24 @@ export interface DashboardStats {
   soldeNetCaisse: number;
   objectifMois: number;
 }
+
+export interface ProjetSpecial {
+  id: string;
+  titre: string;
+  description?: string;
+  objectif_montant: number;
+  collecte_actuelle: number;
+  statut: 'en_cours' | 'termine';
+  date_creation?: string;
+}
+
+export interface CotisationProjet {
+  id: string;
+  projet_id: string;
+  membre_id: string;
+  montant: number;
+  date_paiement: string;
+  encaisseur: string;
+  mode_paiement?: string;
+}
+

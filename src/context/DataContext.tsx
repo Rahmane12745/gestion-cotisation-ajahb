@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { DashboardStats, Membre, MembreWithStats, MonthPaymentStatus, Paiement, Depense } from '@/types';
+import { DashboardStats, Membre, MembreWithStats, MonthPaymentStatus, Paiement, Depense, ProjetSpecial, CotisationProjet } from '@/types';
 import { INITIAL_MEMBRES, INITIAL_PAIEMENTS, INITIAL_DEPENSES } from '@/lib/demoData';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
@@ -9,6 +9,8 @@ interface DataContextType {
   membres: Membre[];
   paiements: Paiement[];
   depenses: Depense[];
+  projetsSpeciaux: ProjetSpecial[];
+  cotisationsProjets: CotisationProjet[];
   membresWithStats: MembreWithStats[];
   stats: DashboardStats;
   selectedMonth: string; // 'AAAA-MM'
@@ -17,6 +19,7 @@ interface DataContextType {
   devise: string;
   nomVillage: string;
   isLoading: boolean;
+  offlinePendingCount: number;
   addMembre: (data: { nom: string; surnom?: string; telephone: string; quartier?: string; photo?: string }) => Promise<{ success: boolean; membre?: Membre; error?: string }>;
   updateMembre: (id: string, data: Partial<Membre>) => Promise<{ success: boolean; error?: string }>;
   deleteMembre: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -37,10 +40,13 @@ interface DataContextType {
     remarque?: string;
   }) => Promise<{ success: boolean; depense?: Depense; error?: string }>;
   deleteDepense: (id: string) => Promise<{ success: boolean; error?: string }>;
+  addProjetSpecial: (data: { titre: string; description?: string; objectif_montant: number }) => Promise<{ success: boolean; error?: string }>;
+  addCotisationProjet: (data: { projet_id: string; membre_id: string; montant: number; encaisseur: string; mode_paiement?: string }) => Promise<{ success: boolean; error?: string }>;
   getPaiementsForMembre: (membreId: string) => Paiement[];
   getMembreById: (id: string) => Membre | undefined;
   resetToDemoData: () => Promise<void>;
   refreshData: () => Promise<void>;
+  syncOfflineQueue: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -63,6 +69,77 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const devise = process.env.NEXT_PUBLIC_CURRENCY || 'F';
   const nomVillage = process.env.NEXT_PUBLIC_VILLAGE_NAME || 'AJAHB';
 
+  const [projetsSpeciaux, setProjetsSpeciaux] = useState<ProjetSpecial[]>([]);
+  const [cotisationsProjets, setCotisationsProjets] = useState<CotisationProjet[]>([]);
+  const [offlinePendingCount, setOfflinePendingCount] = useState<number>(0);
+
+  // Synchronisation des paiements hors-ligne enregistrés en local
+  const syncOfflineQueue = async () => {
+    try {
+      const raw = localStorage.getItem('ajahb_offline_paiements');
+      if (!raw) return;
+      const queue = JSON.parse(raw);
+      if (!Array.isArray(queue) || queue.length === 0) return;
+
+      if (isSupabaseConfigured() && supabase) {
+        for (const payData of queue) {
+          await supabase.from('paiements').insert([payData]);
+        }
+      }
+      localStorage.removeItem('ajahb_offline_paiements');
+      setOfflinePendingCount(0);
+      await loadData();
+    } catch (err) {
+      console.error('Erreur lors de la sync hors-ligne:', err);
+    }
+  };
+
+  const saveToOfflineQueue = (payData: any) => {
+    try {
+      const raw = localStorage.getItem('ajahb_offline_paiements');
+      const queue = raw ? JSON.parse(raw) : [];
+      queue.push(payData);
+      localStorage.setItem('ajahb_offline_paiements', JSON.stringify(queue));
+      setOfflinePendingCount(queue.length);
+    } catch (err) {
+      console.error('Erreur sauvegarde hors-ligne:', err);
+    }
+  };
+
+  useEffect(() => {
+    const checkOfflineCount = () => {
+      try {
+        const raw = localStorage.getItem('ajahb_offline_paiements');
+        if (raw) {
+          const queue = JSON.parse(raw);
+          if (Array.isArray(queue)) setOfflinePendingCount(queue.length);
+        }
+      } catch (e) {}
+    };
+
+    checkOfflineCount();
+
+    const handleOnline = () => {
+      syncOfflineQueue();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
+  const loadProjetsSpeciaux = async () => {
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        const { data: pData } = await supabase.from('projets_speciaux').select('*').order('date_creation', { ascending: false });
+        const { data: cData } = await supabase.from('cotisations_projets').select('*').order('date_paiement', { ascending: false });
+        if (pData) setProjetsSpeciaux(pData);
+        if (cData) setCotisationsProjets(cData);
+      }
+    } catch (err) {
+      console.error('Erreur chargement projets spéciaux:', err);
+    }
+  };
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -73,6 +150,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mData) setMembres(mData);
         if (pData) setPaiements(pData);
         if (dData) setDepenses(dData);
+        await loadProjetsSpeciaux();
       } else {
         const res = await fetch('/api/data');
         if (res.ok) {
@@ -89,9 +167,148 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Enregistrer un paiement (avec support offline auto)
+  const addPaiement = async (data: {
+    membre_id: string;
+    mois: string;
+    montant: number;
+    encaisseur: string;
+    mode_paiement?: string;
+    remarque?: string;
+  }) => {
+    const refNum = Math.floor(1000 + Math.random() * 9000);
+    const reference_recu = `REC-${data.mois.replace('-', '')}-${refNum}`;
+    const newPay = {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `pay-${Date.now()}`,
+      membre_id: data.membre_id,
+      mois: data.mois,
+      montant: data.montant,
+      date_paiement: new Date().toISOString(),
+      encaisseur: data.encaisseur,
+      mode_paiement: data.mode_paiement || 'Espèces',
+      reference_recu,
+      remarque: data.remarque,
+    };
+
+    if (!navigator.onLine) {
+      // Hors-ligne
+      saveToOfflineQueue(newPay);
+      setPaiements((prev) => [newPay as Paiement, ...prev]);
+      return { success: true, paiement: newPay as Paiement };
+    }
+
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        const { data: inserted, error } = await supabase.from('paiements').insert([{
+          membre_id: data.membre_id,
+          mois: data.mois,
+          montant: data.montant,
+          encaisseur: data.encaisseur,
+          mode_paiement: data.mode_paiement || 'Espèces',
+          reference_recu,
+          remarque: data.remarque,
+        }]).select().single();
+        if (error) {
+          saveToOfflineQueue(newPay);
+          setPaiements((prev) => [newPay as Paiement, ...prev]);
+          return { success: true, paiement: newPay as Paiement };
+        }
+        setPaiements((prev) => [inserted, ...prev]);
+        return { success: true, paiement: inserted };
+      } else {
+        const res = await fetch('/api/paiements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+        if (result.success) {
+          setPaiements((prev) => [result.paiement, ...prev]);
+          return { success: true, paiement: result.paiement };
+        } else {
+          return { success: false, error: result.error };
+        }
+      }
+    } catch (err) {
+      saveToOfflineQueue(newPay);
+      setPaiements((prev) => [newPay as Paiement, ...prev]);
+      return { success: true, paiement: newPay as Paiement };
+    }
+  };
+
+  // Créer un projet spécial
+  const addProjetSpecial = async (data: { titre: string; description?: string; objectif_montant: number }) => {
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        const { error } = await supabase.from('projets_speciaux').insert([{
+          titre: data.titre,
+          description: data.description,
+          objectif_montant: data.objectif_montant,
+          collecte_actuelle: 0,
+          statut: 'en_cours',
+        }]);
+        if (error) return { success: false, error: error.message };
+        await loadProjetsSpeciaux();
+        return { success: true };
+      } else {
+        const newProj: ProjetSpecial = {
+          id: `proj-${Date.now()}`,
+          titre: data.titre,
+          description: data.description,
+          objectif_montant: data.objectif_montant,
+          collecte_actuelle: 0,
+          statut: 'en_cours',
+        };
+        setProjetsSpeciaux((prev) => [newProj, ...prev]);
+        return { success: true };
+      }
+    } catch (err) {
+      return { success: false, error: 'Erreur lors de la création du projet' };
+    }
+  };
+
+  // Versement sur projet spécial
+  const addCotisationProjet = async (data: { projet_id: string; membre_id: string; montant: number; encaisseur: string; mode_paiement?: string }) => {
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        const { error } = await supabase.from('cotisations_projets').insert([{
+          projet_id: data.projet_id,
+          membre_id: data.membre_id,
+          montant: data.montant,
+          encaisseur: data.encaisseur,
+          mode_paiement: data.mode_paiement || 'Espèces',
+        }]);
+        if (error) return { success: false, error: error.message };
+
+        // Mettre à jour la collecte du projet
+        const proj = projetsSpeciaux.find((p) => p.id === data.projet_id);
+        if (proj) {
+          const nouvelleCollecte = Number(proj.collecte_actuelle) + Number(data.montant);
+          await supabase.from('projets_speciaux').update({ collecte_actuelle: nouvelleCollecte }).eq('id', data.projet_id);
+        }
+
+        await loadProjetsSpeciaux();
+        return { success: true };
+      } else {
+        const newCot: CotisationProjet = {
+          id: `cotp-${Date.now()}`,
+          projet_id: data.projet_id,
+          membre_id: data.membre_id,
+          montant: data.montant,
+          date_paiement: new Date().toISOString(),
+          encaisseur: data.encaisseur,
+          mode_paiement: data.mode_paiement,
+        };
+        setCotisationsProjets((prev) => [newCot, ...prev]);
+        setProjetsSpeciaux((prev) =>
+          prev.map((p) => (p.id === data.projet_id ? { ...p, collecte_actuelle: Number(p.collecte_actuelle) + Number(data.montant) } : p))
+        );
+        return { success: true };
+      }
+    } catch (err) {
+      return { success: false, error: 'Erreur versement projet' };
+    }
+  };
 
   // Calcul des membres enrichis avec historique et statuts
   const membresWithStats: MembreWithStats[] = useMemo(() => {
@@ -245,51 +462,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Enregistrer un paiement
-  const addPaiement = async (data: {
-    membre_id: string;
-    mois: string;
-    montant: number;
-    encaisseur: string;
-    mode_paiement?: string;
-    remarque?: string;
-  }) => {
-    try {
-      if (isSupabaseConfigured() && supabase) {
-        const refNum = Math.floor(1000 + Math.random() * 9000);
-        const reference_recu = `REC-${data.mois.replace('-', '')}-${refNum}`;
-        const newPay = {
-          membre_id: data.membre_id,
-          mois: data.mois,
-          montant: data.montant,
-          encaisseur: data.encaisseur,
-          mode_paiement: data.mode_paiement || 'Espèces',
-          reference_recu,
-          remarque: data.remarque,
-        };
-        const { data: inserted, error } = await supabase.from('paiements').insert([newPay]).select().single();
-        if (error) return { success: false, error: error.message };
-        setPaiements((prev) => [inserted, ...prev]);
-        return { success: true, paiement: inserted };
-      } else {
-        const res = await fetch('/api/paiements', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        const result = await res.json();
-        if (result.success) {
-          setPaiements((prev) => [result.paiement, ...prev]);
-          return { success: true, paiement: result.paiement };
-        } else {
-          return { success: false, error: result.error };
-        }
-      }
-    } catch (err) {
-      return { success: false, error: 'Erreur réseau lors de l\'encaissement' };
-    }
-  };
-
   // Supprimer un versement
   const deletePaiement = async (id: string) => {
     try {
@@ -396,6 +568,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         membres,
         paiements,
         depenses,
+        projetsSpeciaux,
+        cotisationsProjets,
         membresWithStats,
         stats,
         selectedMonth,
@@ -404,6 +578,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         devise,
         nomVillage,
         isLoading,
+        offlinePendingCount,
         addMembre,
         updateMembre,
         deleteMembre,
@@ -411,10 +586,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deletePaiement,
         addDepense,
         deleteDepense,
+        addProjetSpecial,
+        addCotisationProjet,
         getPaiementsForMembre,
         getMembreById,
         resetToDemoData,
         refreshData: loadData,
+        syncOfflineQueue,
       }}
     >
       {children}
