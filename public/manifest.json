@@ -1,10 +1,12 @@
 {
-  "name": "Registre Cotisations Village",
-  "short_name": "Cotisations",
-  "description": "Registre numérique des cotisations mensuelles du village",
+  "name": "AJAHB - Cotisations du Village",
+  "short_name": "AJAHB",
+  "description": "Application mobile officielle de gestion des cotisations du village AJAHB",
   "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
-  "background_color": "#064e3b",
+  "background_color": "#091e17",
   "theme_color": "#059669",
   "orientation": "portrait-primary",
   "icons": [
