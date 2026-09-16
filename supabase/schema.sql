@@ -13,11 +13,13 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
     nom TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('admin', 'tresorier', 'membre_bureau')),
     mot_de_passe TEXT DEFAULT 'ajahb2026',
+    photo TEXT,
     actif BOOLEAN DEFAULT true,
     date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
 );
 
 ALTER TABLE public.utilisateurs ADD COLUMN IF NOT EXISTS mot_de_passe TEXT DEFAULT 'ajahb2026';
+ALTER TABLE public.utilisateurs ADD COLUMN IF NOT EXISTS photo TEXT;
 
 -- 3. Séquence pour numéro matricule membre (ex: MBR-0001)
 CREATE SEQUENCE IF NOT EXISTS membre_seq START 1;
@@ -49,7 +51,7 @@ CREATE TABLE IF NOT EXISTS public.paiements (
     montant NUMERIC(12, 2) NOT NULL CHECK (montant > 0),
     date_paiement TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW()),
     encaisseur TEXT NOT NULL,
-    mode_paiement TEXT DEFAULT 'Espèces', -- 'Espèces', 'Wave', 'Orange Money', 'Virement'
+    mode_paiement TEXT DEFAULT 'Espèces',
     reference_recu TEXT,
     remarque TEXT,
     date_creation TIMESTAMPTZ DEFAULT TIMEZONE('utc', NOW())
@@ -70,7 +72,7 @@ CREATE TABLE IF NOT EXISTS public.depenses (
 CREATE INDEX IF NOT EXISTS idx_depenses_date ON public.depenses(date_depense DESC);
 
 -- ====================================================================
--- ACTIVATION RLS AVEC POLITIQUES ACCÈS PUBLIC (ACCÈS API WEB SANS AVERTISSEMENT)
+-- ACTIVATION RLS AVEC POLITIQUES ACCÈS PUBLIC
 -- ====================================================================
 
 ALTER TABLE public.utilisateurs ENABLE ROW LEVEL SECURITY;
@@ -91,7 +93,7 @@ DROP POLICY IF EXISTS "Allow public depenses" ON public.depenses;
 CREATE POLICY "Allow public depenses" ON public.depenses FOR ALL USING (true) WITH CHECK (true);
 
 -- ====================================================================
--- DONNÉES INITIALES DE DÉMARRAGE (3 COMPTES PAR DÉFAUT)
+-- DONNÉES INITIALES DE DÉMARRAGE
 -- ====================================================================
 INSERT INTO public.utilisateurs (email, nom, role, mot_de_passe, actif)
 VALUES 
@@ -99,5 +101,3 @@ VALUES
   ('tresorier@ajahb.org', 'Amadou Sow (Trésorier)', 'tresorier', 'tresor123', true),
   ('bureau@ajahb.org', 'Fatou Ndiaye (Secrétaire)', 'membre_bureau', 'bureau123', true)
 ON CONFLICT (email) DO NOTHING;
-
-
