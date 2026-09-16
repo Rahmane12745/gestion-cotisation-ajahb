@@ -8,6 +8,7 @@ import { WaveDashboard } from '@/components/WaveDashboard';
 import { WaveMemberListTab } from '@/components/WaveMemberListTab';
 import { WaveMemberDetail } from '@/components/WaveMemberDetail';
 import { WaveJournal } from '@/components/WaveJournal';
+import { WaveGestionTab } from '@/components/WaveGestionTab';
 import { WavePaymentModal } from '@/components/WavePaymentModal';
 import { WaveMemberModal } from '@/components/WaveMemberModal';
 import { WaveReceiptModal } from '@/components/WaveReceiptModal';
@@ -19,14 +20,20 @@ import { DepenseModal } from '@/components/DepenseModal';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 import { LoginPage } from '@/components/LoginPage';
 import { MembreWithStats, Paiement, Membre } from '@/types';
-import { Home as HomeIcon, Users as UsersIcon, Receipt, Plus } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Users as UsersIcon,
+  ClipboardList,
+  Settings,
+  Plus,
+} from 'lucide-react';
 
 export default function Home() {
   const { isAuthenticated, isLoading: authLoading, loginWithEmail } = useAuth();
   const { membresWithStats } = useData();
 
-  // Navigation tab: 'home' | 'membres' | 'journal'
-  const [activeTab, setActiveTab] = useState<'home' | 'membres' | 'journal'>('home');
+  // Navigation: 4 tabs + central button
+  const [activeTab, setActiveTab] = useState<'home' | 'membres' | 'journal' | 'gestion'>('home');
 
   // Selected member for detail view
   const [selectedMember, setSelectedMember] = useState<MembreWithStats | null>(null);
@@ -50,7 +57,6 @@ export default function Home() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
-
 
   // PWA Prompt
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -110,49 +116,50 @@ export default function Home() {
     setReceiptPayment(paiement);
     setIsReceiptOpen(true);
 
-    // Mettre à jour la fiche sélectionnée si ouverte
     if (selectedMember) {
       const updated = membresWithStats.find((m) => m.id === selectedMember.id);
       if (updated) setSelectedMember(updated);
     }
   };
 
-  // Écran de chargement initial
+  // Loading screen
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f172a]">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-emerald-400">Chargement de l'application...</p>
+          <p className="text-sm font-semibold text-emerald-400">Chargement...</p>
         </div>
       </div>
     );
   }
 
-  // Écran de connexion si non authentifié
+  // Login screen
   if (!isAuthenticated) {
     return <LoginPage onLogin={loginWithEmail} isLoading={authLoading} />;
   }
 
+  const navItems = [
+    { id: 'home' as const, label: 'Accueil', icon: LayoutDashboard },
+    { id: 'membres' as const, label: 'Membres', icon: UsersIcon },
+    { id: 'journal' as const, label: 'Historique', icon: ClipboardList },
+    { id: 'gestion' as const, label: 'Gestion', icon: Settings },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#0f172a] text-slate-900 font-sans selection:bg-emerald-500 selection:text-white">
-      {/* Centered Mobile-first Shell with Desktop backdrop */}
-      <div className="w-full max-w-md mx-auto min-h-screen bg-[#F4F6F8] flex flex-col shadow-2xl relative border-x border-slate-200/50">
-        {/* 1. Header Minimaliste & Haut de gamme */}
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-900 font-sans selection:bg-emerald-500 selection:text-white">
+      <div className="w-full max-w-md mx-auto min-h-screen bg-[#F5F6F8] flex flex-col shadow-2xl relative border-x border-slate-200/30">
+        {/* Header */}
         <WaveHeader
-          onOpenAdmin={() => setIsAdminOpen(true)}
-          onOpenExport={() => setIsExportOpen(true)}
           deferredPrompt={deferredPrompt}
           onInstallPwa={handleInstallPwa}
         />
 
-        {/* 2. Écran Principal */}
+        {/* Main Content */}
         <main className="flex-1 w-full px-4 pt-4 pb-24">
           {activeTab === 'home' && (
             <WaveDashboard
               onOpenPayment={(id) => handleOpenPayment(id)}
-              onOpenBroadcast={() => setIsBroadcastOpen(true)}
-              onOpenDepense={() => setIsDepenseModalOpen(true)}
               onSelectMember={(m) => setSelectedMember(m)}
               onViewReceipt={handleViewReceipt}
             />
@@ -168,74 +175,89 @@ export default function Home() {
           {activeTab === 'journal' && (
             <WaveJournal onViewReceipt={handleViewReceipt} />
           )}
+
+          {activeTab === 'gestion' && (
+            <WaveGestionTab
+              onOpenDepense={() => setIsDepenseModalOpen(true)}
+              onOpenAdmin={() => setIsAdminOpen(true)}
+              onOpenExport={() => setIsExportOpen(true)}
+              onOpenBroadcast={() => setIsBroadcastOpen(true)}
+            />
+          )}
         </main>
 
-        {/* 3. Barre de navigation Wave en bas */}
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-40 bg-white/95 backdrop-blur border-t border-slate-200/80 shadow-2xl py-2 px-4">
-          <div className="flex items-center justify-around">
-            {/* Onglet Accueil */}
-            <button
-              onClick={() => {
-                setActiveTab('home');
-                setSelectedMember(null);
-              }}
-              className={`flex flex-col items-center gap-1 text-xs font-black transition-all ${
-                activeTab === 'home'
-                  ? 'text-emerald-600 scale-105'
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <div className={`p-1.5 rounded-2xl ${activeTab === 'home' ? 'bg-emerald-50' : ''}`}>
-                <HomeIcon className="w-5 h-5" />
-              </div>
-              <span>Accueil</span>
-            </button>
+        {/* Bottom Navigation — 5 items: 2 tabs + central button + 2 tabs */}
+        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-40 bg-white/98 backdrop-blur-xl border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+          <div className="flex items-center justify-around px-2 py-1.5">
+            {/* Left tabs: Accueil, Membres */}
+            {navItems.slice(0, 2).map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setSelectedMember(null);
+                  }}
+                  className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition-all ${
+                    isActive
+                      ? 'text-emerald-600'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-emerald-50' : ''}`}>
+                    <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                  </div>
+                  <span className={`text-[10px] font-bold ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
 
-            {/* Onglet Membres */}
-            <button
-              onClick={() => setActiveTab('membres')}
-              className={`flex flex-col items-center gap-1 text-xs font-black transition-all ${
-                activeTab === 'membres'
-                  ? 'text-emerald-600 scale-105'
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <div className={`p-1.5 rounded-2xl ${activeTab === 'membres' ? 'bg-emerald-50' : ''}`}>
-                <UsersIcon className="w-5 h-5" />
-              </div>
-              <span>Membres</span>
-            </button>
-
-            {/* Gros Bouton Central Encaisser */}
+            {/* Central FAB Button */}
             <button
               onClick={() => handleOpenPayment()}
-              className="flex flex-col items-center -mt-6 bg-gradient-to-tr from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 active:scale-90 text-white p-4 rounded-full shadow-xl shadow-emerald-600/40 transition-all border-4 border-[#F4F6F8]"
+              className="flex flex-col items-center -mt-7"
               title="Encaisser"
             >
-              <Plus className="w-6 h-6 stroke-[3]" />
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 active:scale-90 text-white p-3.5 rounded-2xl shadow-xl shadow-emerald-600/30 transition-all border-4 border-[#F5F6F8]">
+                <Plus className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-400 mt-0.5">Encaisser</span>
             </button>
 
-            {/* Onglet Historique */}
-            <button
-              onClick={() => {
-                setActiveTab('journal');
-                setSelectedMember(null);
-              }}
-              className={`flex flex-col items-center gap-1 text-xs font-black transition-all ${
-                activeTab === 'journal'
-                  ? 'text-emerald-600 scale-105'
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <div className={`p-1.5 rounded-2xl ${activeTab === 'journal' ? 'bg-emerald-50' : ''}`}>
-                <Receipt className="w-5 h-5" />
-              </div>
-              <span>Historique</span>
-            </button>
+            {/* Right tabs: Historique, Gestion */}
+            {navItems.slice(2, 4).map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setSelectedMember(null);
+                  }}
+                  className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-2xl transition-all ${
+                    isActive
+                      ? 'text-emerald-600'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-emerald-50' : ''}`}>
+                    <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                  </div>
+                  <span className={`text-[10px] font-bold ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </nav>
 
-        {/* 4. Fiche détaillée du membre (12 mois + encaissement direct + actions admin) */}
+        {/* Member Detail */}
         {selectedMember && (
           <WaveMemberDetail
             membre={selectedMember}
@@ -247,7 +269,7 @@ export default function Home() {
           />
         )}
 
-        {/* Modales */}
+        {/* Modals */}
         <WavePaymentModal
           isOpen={isPaymentOpen}
           onClose={() => setIsPaymentOpen(false)}
@@ -302,4 +324,3 @@ export default function Home() {
     </div>
   );
 }
-

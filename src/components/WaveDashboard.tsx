@@ -5,37 +5,28 @@ import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatMoisFrancais, formatMontant, genererTexteRappel, partagerSurWhatsApp } from '@/lib/whatsappUtils';
 import {
-  CreditCard,
   Search,
   Check,
   MessageCircle,
   Eye,
   EyeOff,
-  Radio,
-  Sparkles,
   ChevronRight,
-  TrendingDown,
-  Wallet
 } from 'lucide-react';
 import { MembreWithStats, Paiement } from '@/types';
 
 interface WaveDashboardProps {
   onOpenPayment: (defaultMemberId?: string) => void;
-  onOpenBroadcast: () => void;
-  onOpenDepense: () => void;
   onSelectMember: (m: MembreWithStats) => void;
   onViewReceipt: (paiement: Paiement) => void;
 }
 
 export const WaveDashboard: React.FC<WaveDashboardProps> = ({
   onOpenPayment,
-  onOpenBroadcast,
-  onOpenDepense,
   onSelectMember,
   onViewReceipt,
 }) => {
   const { stats, selectedMonth, setSelectedMonth, membresWithStats, paiements, devise, nomVillage, montantCotisation } = useData();
-  const { canCollectPayments, isTresorier, isAdmin } = useAuth();
+  const { canCollectPayments } = useAuth();
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'late' | 'paid'>('all');
@@ -50,7 +41,7 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
     { num: '05', name: 'Mai' },
     { num: '06', name: 'Juin' },
     { num: '07', name: 'Juil' },
-    { num: '08', name: 'Aoû' },
+    { num: '08', name: 'Août' },
     { num: '09', name: 'Sep' },
     { num: '10', name: 'Oct' },
     { num: '11', name: 'Nov' },
@@ -90,56 +81,34 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
 
   return (
     <div className="max-w-md mx-auto space-y-4 pb-24 sm:pb-8 animate-slideUp">
-      {/* 1. Hero Balance Card - High Tier Design */}
-      <div className="relative rounded-3xl p-5 sm:p-6 text-white overflow-hidden shadow-2xl bg-gradient-to-br from-[#064e3b] via-[#047857] to-[#022c22] border border-emerald-500/20">
+      {/* 1. Hero Balance Card - Slate/Emerald 2-Color Design */}
+      <div className="relative rounded-3xl p-5 sm:p-6 text-white overflow-hidden shadow-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-900 border border-emerald-500/20">
         {/* Subtle glass glow accents */}
         <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-teal-400/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Card Header: Month Selector Carousel */}
+        {/* Card Header: Month Tag */}
         <div className="flex items-center justify-between gap-2 mb-3">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-200/90 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-100 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
             {formatMoisFrancais(selectedMonth)}
           </span>
-
-          <div className="flex items-center gap-1.5">
-            {(isAdmin || isTresorier) && (
-              <button
-                onClick={onOpenDepense}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/30 hover:bg-rose-500/40 active:scale-95 text-rose-200 text-[11px] font-extrabold backdrop-blur border border-rose-400/30 transition-all"
-                title="Enregistrer une dépense déboursée par le village"
-              >
-                <TrendingDown className="w-3.5 h-3.5 text-rose-300" />
-                <span>+ Dépense</span>
-              </button>
-            )}
-
-            <button
-              onClick={onOpenBroadcast}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-emerald-100 text-[11px] font-bold backdrop-blur transition-all"
-              title="Diffuser le point dans le groupe WhatsApp"
-            >
-              <Radio className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Diffuser</span>
-            </button>
-          </div>
         </div>
 
         {/* Balance Amount with Show/Hide toggle */}
         <div className="my-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs text-emerald-200/90 font-medium">
+            <div className="flex items-center gap-2 text-xs text-emerald-100/90 font-medium">
               <span>Solde Net en Caisse</span>
               <button
                 onClick={() => setShowBalance(!showBalance)}
-                className="text-emerald-300/80 hover:text-white transition-colors"
+                className="text-emerald-200/80 hover:text-white transition-colors"
               >
                 {showBalance ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
               </button>
             </div>
             {stats.totalDepensesAnnee > 0 && (
-              <span className="text-[10px] text-rose-300 font-bold bg-rose-950/40 px-2 py-0.5 rounded-full border border-rose-500/30">
+              <span className="text-[10px] text-emerald-100 font-bold bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-400/30">
                 Dépenses: -{formatMontant(stats.totalDepensesAnnee, devise)}
               </span>
             )}
@@ -149,12 +118,11 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
             <span>{showBalance ? formatMontant(stats.soldeNetCaisse, devise) : '••••••••'}</span>
           </div>
 
-          <div className="text-[11px] text-emerald-300/80 mt-1 font-medium flex items-center gap-1">
+          <div className="text-[11px] text-emerald-100/80 mt-1 font-medium flex items-center gap-1">
             <span>Cotisations collectées:</span>
             <strong className="text-white">{showBalance ? formatMontant(stats.totalCollecteMois, devise) : '••••'}</strong>
           </div>
         </div>
-
 
         {/* Horizontal Mini Month Carousel */}
         <div className="mt-4 pt-3 border-t border-emerald-500/30">
@@ -169,7 +137,7 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
                   className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
                     isSelected
                       ? 'bg-white text-emerald-900 shadow-md font-black scale-105'
-                      : 'bg-emerald-900/40 text-emerald-200 hover:bg-emerald-800/60'
+                      : 'bg-emerald-900/40 text-emerald-100 hover:bg-emerald-800/60'
                   }`}
                 >
                   {m.name}
@@ -186,7 +154,7 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
               <strong>{stats.membresPayesMois}</strong> / {stats.totalMembres} membres à jour
             </span>
           </div>
-          <span className="bg-emerald-400/20 text-emerald-200 font-extrabold px-2.5 py-0.5 rounded-full text-[11px] border border-emerald-400/30">
+          <span className="bg-emerald-400/20 text-emerald-100 font-extrabold px-2.5 py-0.5 rounded-full text-[11px] border border-emerald-400/30">
             {stats.tauxRecouvrement}% réalisé
           </span>
         </div>
@@ -229,8 +197,8 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
           onClick={() => setFilter('late')}
           className={`flex-1 py-2 rounded-xl transition-all text-center ${
             filter === 'late'
-              ? 'bg-rose-600 text-white shadow-sm font-black'
-              : 'text-rose-700 hover:bg-rose-100/50'
+              ? 'bg-emerald-800 text-white shadow-sm font-black'
+              : 'text-slate-700 hover:bg-slate-100'
           }`}
         >
           En attente ({membresWithStats.filter((m) => !m.statutMoisCourant).length})
@@ -241,7 +209,7 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
           className={`flex-1 py-2 rounded-xl transition-all text-center ${
             filter === 'paid'
               ? 'bg-emerald-600 text-white shadow-sm font-black'
-              : 'text-emerald-700 hover:bg-emerald-100/50'
+              : 'text-emerald-800 hover:bg-emerald-50'
           }`}
         >
           Payés ({membresWithStats.filter((m) => m.statutMoisCourant).length})
@@ -277,7 +245,7 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
                     <div
                       className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm flex-shrink-0 shadow-sm transition-transform group-hover:scale-105 ${
                         isPaid
-                          ? 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white'
+                          ? 'bg-gradient-to-tr from-emerald-600 to-emerald-700 text-white'
                           : 'bg-slate-100 text-slate-700'
                       }`}
                     >

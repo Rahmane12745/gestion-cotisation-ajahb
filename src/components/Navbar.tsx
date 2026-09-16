@@ -43,42 +43,42 @@ export const Navbar: React.FC<NavbarProps> = ({
     switch (role) {
       case 'admin':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
-            <ShieldCheck className="w-3.5 h-3.5" /> Administrateur
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-red-100 to-red-50 text-red-700 border border-red-200/50 shadow-sm">
+            <ShieldCheck className="w-4 h-4" /> Admin
           </span>
         );
       case 'tresorier':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <UserCheck className="w-3.5 h-3.5" /> Trésorier
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-100 to-teal-50 text-emerald-700 border border-emerald-200/50 shadow-sm">
+            <UserCheck className="w-4 h-4" /> Trésorier
           </span>
         );
       case 'membre_bureau':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
-            <Users className="w-3.5 h-3.5" /> Consultation (Bureau)
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 border border-blue-200/50 shadow-sm">
+            <Users className="w-4 h-4" /> Bureau
           </span>
         );
     }
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+    <header className="sticky top-0 z-40 bg-white/98 backdrop-blur-xl border-b border-slate-100 shadow-lg">
       {/* Main Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo & Title */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-600/20">
-              <span className="text-lg">🏛️</span>
+          <div className="flex items-center gap-3 group cursor-pointer">
+            <div className="w-11 h-11 rounded-xl bg-gradient-primary flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-500/25 group-hover:shadow-emerald-500/40 transition-all duration-300 transform group-hover:scale-105">
+              <span className="text-xl">🏛️</span>
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight">
                 {nomVillage}
               </h1>
-              <p className="text-xs text-slate-500 font-medium hidden xs:block">
-                Registre Numérique des Cotisations
+              <p className="text-xs text-slate-500 font-semibold hidden xs:block tracking-wide">
+                Registre Cotisations
               </p>
             </div>
           </div>
@@ -88,37 +88,37 @@ export const Navbar: React.FC<NavbarProps> = ({
             {deferredPrompt && (
               <button
                 onClick={onInstallPwa}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200 transition-colors"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 hover:from-teal-100 hover:to-cyan-100 border border-teal-200/50 transition-all duration-300 shadow-sm hover:shadow-teal-200/30"
                 title="Installer sur l'ordinateur ou téléphone"
               >
                 <Smartphone className="w-4 h-4" />
-                <span>Installer l'app</span>
+                <span>Installer</span>
               </button>
             )}
 
             <button
               onClick={onOpenExportModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 transition-all duration-300 shadow-sm"
               title="Exporter Excel ou PDF"
             >
-              <Download className="w-4 h-4 text-slate-600" />
+              <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Exporter</span>
             </button>
 
             {canEditMembers && (
               <button
                 onClick={onOpenMemberModal}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 transform hover:scale-105"
               >
-                <PlusCircle className="w-4 h-4 text-emerald-600" />
-                <span>Nouveau membre</span>
+                <PlusCircle className="w-4 h-4" />
+                <span>+ Membre</span>
               </button>
             )}
 
             {canCollectPayments && (
               <button
                 onClick={onOpenPaymentModal}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-600/30"
+                className="flex items-center gap-1.5 px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transform hover:scale-105"
               >
                 <CreditCard className="w-4 h-4" />
                 <span>Encaisser</span>
@@ -134,17 +134,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             {isAdmin && (
               <button
                 onClick={onOpenAdminModal}
-                className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200"
+                className="p-1.5 rounded-lg text-slate-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/50 transition-all duration-300 shadow-sm hover:shadow-red-200/30"
                 title="Gérer les comptes et accès"
               >
-                <ShieldCheck className="w-5 h-5 text-red-600" />
+                <ShieldCheck className="w-5 h-5" />
               </button>
             )}
 
             {/* Logout button */}
             <button
               onClick={logout}
-              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-red-200"
+              className="p-1.5 rounded-lg text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/50 transition-all duration-300 shadow-sm hover:shadow-red-200/30"
               title="Déconnexion"
             >
               <LogOut className="w-5 h-5" />
