@@ -410,9 +410,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         const { data: inserted, error } = await supabase.from('membres').insert([newMembre]).select().single();
         if (error) {
-          // En cas de conflit de matricule existant, réessayer sans forcer le matricule
-          // pour laisser la séquence PostgreSQL attribuer automatiquement un matricule unique
+          // En cas de conflit de matricule existant, générer un matricule garanti unique avec timestamp
+          const uniqueMatriculeFallback = `MBR-${Date.now().toString().slice(-6)}`;
           const fallbackMembre = {
+            matricule: uniqueMatriculeFallback,
             nom: data.nom.trim(),
             surnom: data.surnom?.trim() || null,
             telephone: data.telephone.trim(),
