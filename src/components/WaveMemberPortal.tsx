@@ -294,18 +294,37 @@ export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
         </div>
       )}
 
-      {/* 3. Onglet 2 : Notifications & Reçus de validation */}
+      {/* 3. Onglet 2 : Notifications & Reçus de validation avec Photo du Village */}
       {portalTab === 'notifications' && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div>
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Bell className="w-4.5 h-4.5 text-emerald-600" /> Notifications & Validations
+        <div className="space-y-4">
+          {/* Bannière Photo du Village */}
+          <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 min-h-[140px] flex items-end p-4 text-white">
+            <img
+              src="/village.jpg"
+              alt="Photo du Village AJAHB"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent" />
+
+            <div className="relative z-10 space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-slate-900/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                {nomVillage} • Portail Officiel
+              </span>
+              <h3 className="text-lg font-black text-white leading-tight">
+                Notifications & Validations
               </h3>
-              <p className="text-xs text-slate-500 font-medium">Validations de cotisations en temps réel</p>
+              <p className="text-xs text-slate-200 font-medium">
+                Appuyez sur une notification pour afficher la totalité des informations et votre reçu.
+              </p>
             </div>
-            <span className="text-xs font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              {memberPaiementsSorted.length} reçu(s)
+          </div>
+
+          <div className="flex items-center justify-between px-1">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">
+              Historique des validations ({memberPaiementsSorted.length})
+            </h4>
+            <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              Cliquez pour le reçu
             </span>
           </div>
 
@@ -346,45 +365,53 @@ export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
                   minute: '2-digit',
                 });
 
+                const moisTxt = formatMoisFrancais(p.mois);
+
                 return (
                   <div
                     key={p.id}
-                    className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-3 hover:border-emerald-300 transition-all"
+                    onClick={() => onViewReceipt(p)}
+                    className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-xs space-y-3 hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer group active:scale-[0.99]"
+                    title="Appuyez pour afficher tous les détails et le reçu"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                           <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-extrabold text-xs text-slate-900">
-                            Cotisation Encaissement Validé
+                          <h4 className="font-black text-sm text-slate-900 group-hover:text-emerald-700 transition-colors">
+                            Paiement mois : {moisTxt}
                           </h4>
-                          <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                            {dateFormatee}
+                          <span className="text-[11px] text-slate-400 font-semibold block mt-0.5">
+                            Validé le {dateFormatee}
                           </span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 flex-shrink-0">
-                        {p.mode_paiement || 'Espèces'}
+
+                      <span className="text-[10px] font-black bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200 flex-shrink-0">
+                        {formatMontant(p.montant, devise)}
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                      Votre versement de <span className="font-black text-emerald-700">{formatMontant(p.montant, devise)}</span> pour le mois de <span className="font-black text-slate-900">{formatMoisFrancais(p.mois)}</span> a été validé par <span className="font-bold text-slate-900">{p.encaisseur}</span>.
-                    </p>
+                    <div className="p-3 bg-slate-50/90 rounded-xl border border-slate-100 text-xs text-slate-700 font-medium space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">Validé par :</span>
+                        <span className="font-bold text-slate-900">{p.encaisseur}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">Mode de règlement :</span>
+                        <span className="font-bold text-emerald-700">{p.mode_paiement || 'Espèces'}</span>
+                      </div>
+                    </div>
 
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-[11px] font-mono text-slate-400 font-semibold">
-                        N° Réf: {p.reference_recu || p.id.slice(0, 8).toUpperCase()}
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        Réf: {p.reference_recu || p.id.slice(0, 8).toUpperCase()}
                       </span>
-                      <button
-                        onClick={() => onViewReceipt(p)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs shadow-sm shadow-emerald-600/20 transition-all"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        <span>Voir mon reçu</span>
-                      </button>
+                      <span className="text-emerald-700 font-black flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        <span>Voir détails & reçu</span> →
+                      </span>
                     </div>
                   </div>
                 );
@@ -394,7 +421,7 @@ export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
         </div>
       )}
 
-      {/* 3. Onglet 1 : Suivi des Cotisations (12 Mois) */}
+      {/* 4. Onglet 1 : Suivi des Cotisations (12 Mois) */}
       {portalTab === 'cotisations' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
