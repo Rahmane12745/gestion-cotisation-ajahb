@@ -20,14 +20,16 @@ import {
   Receipt,
   Lock,
   Wallet,
-  Calendar
+  Calendar,
+  Bell,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface WaveMemberPortalProps {
   onViewReceipt: (p: Paiement) => void;
   onLogout?: () => void;
-  portalTab?: 'cotisations' | 'profil';
-  setPortalTab?: (tab: 'cotisations' | 'profil') => void;
+  portalTab?: 'cotisations' | 'notifications' | 'profil';
+  setPortalTab?: (tab: 'cotisations' | 'notifications' | 'profil') => void;
 }
 
 export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
@@ -39,10 +41,10 @@ export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
   const { membresWithStats, paiements, updateMembre, devise, montantCotisation, nomVillage } = useData();
   const { currentUser, logout, updateProfile } = useAuth();
 
-  // Navigation tab pour l'espace membre: 'cotisations' | 'profil'
-  const [internalPortalTab, setInternalPortalTab] = useState<'cotisations' | 'profil'>('cotisations');
+  // Navigation tab pour l'espace membre: 'cotisations' | 'notifications' | 'profil'
+  const [internalPortalTab, setInternalPortalTab] = useState<'cotisations' | 'notifications' | 'profil'>('cotisations');
   const portalTab = externalPortalTab !== undefined ? externalPortalTab : internalPortalTab;
-  const setPortalTab = (tab: 'cotisations' | 'profil') => {
+  const setPortalTab = (tab: 'cotisations' | 'notifications' | 'profil') => {
     if (externalSetPortalTab) {
       externalSetPortalTab(tab);
     }
@@ -156,6 +158,12 @@ export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
     .filter((p) => p.membre_id === membreAssocie.id)
     .forEach((p) => paiementsByMonth.set(p.mois, p));
 
+  const memberPaiementsSorted = useMemo(() => {
+    return paiements
+      .filter((p) => p.membre_id === membreAssocie.id)
+      .sort((a, b) => new Date(b.date_paiement).getTime() - new Date(a.date_paiement).getTime());
+  }, [paiements, membreAssocie.id]);
+
   return (
     <div className="max-w-md mx-auto space-y-4 pb-24 sm:pb-8 animate-slideUp">
       {/* 1. Hero Card Profil Membre */}
@@ -233,30 +241,42 @@ export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
         </div>
       </div>
 
-      {/* 2. Barre de Navigation Onglets : Cotisations | Profil */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-200/60 rounded-2xl font-black text-xs">
+      {/* 2. Barre de Navigation Onglets : Cotisations | Notifications | Profil */}
+      <div className="flex items-center gap-1.5 p-1.5 bg-slate-200/60 rounded-2xl font-black text-xs">
         <button
           onClick={() => setPortalTab('cotisations')}
-          className={`flex-1 py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2 px-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
             portalTab === 'cotisations'
               ? 'bg-white text-emerald-800 shadow-sm font-black'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Receipt className="w-4 h-4 text-emerald-600" />
-          <span>Cotisations ({totalPaidMonths}/12)</span>
+          <Receipt className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+          <span className="truncate">Cotisations</span>
+        </button>
+
+        <button
+          onClick={() => setPortalTab('notifications')}
+          className={`flex-1 py-2 px-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 relative ${
+            portalTab === 'notifications'
+              ? 'bg-white text-emerald-800 shadow-sm font-black'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Bell className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+          <span className="truncate">Notifs ({memberPaiementsSorted.length})</span>
         </button>
 
         <button
           onClick={() => setPortalTab('profil')}
-          className={`flex-1 py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2 px-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
             portalTab === 'profil'
               ? 'bg-white text-emerald-800 shadow-sm font-black'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <User className="w-4 h-4 text-emerald-600" />
-          <span>Mon Profil</span>
+          <User className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+          <span className="truncate">Profil</span>
         </button>
       </div>
 
@@ -271,6 +291,106 @@ export const WaveMemberPortal: React.FC<WaveMemberPortalProps> = ({
         <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-2xl flex items-center gap-2 animate-fadeIn">
           <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
           {errorMsg}
+        </div>
+      )}
+
+      {/* 3. Onglet 2 : Notifications & Reçus de validation */}
+      {portalTab === 'notifications' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Bell className="w-4.5 h-4.5 text-emerald-600" /> Notifications & Validations
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">Validations de cotisations en temps réel</p>
+            </div>
+            <span className="text-xs font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              {memberPaiementsSorted.length} reçu(s)
+            </span>
+          </div>
+
+          {/* Note ou Sanction administrative s'il y en a une */}
+          {membreAssocie.sanction && (
+            <div className="p-4 bg-amber-50 border border-amber-200/90 rounded-2xl shadow-xs space-y-2">
+              <div className="flex items-center gap-2 text-amber-800 font-extrabold text-xs">
+                <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>Sanction ou Note administrative active</span>
+              </div>
+              <p className="text-xs text-amber-900 font-semibold">{membreAssocie.sanction}</p>
+              {(membreAssocie.sanction_montant || 0) > 0 && (
+                <p className="text-xs font-black text-amber-900">
+                  Montant dû : {formatMontant(membreAssocie.sanction_montant || 0, devise)}
+                </p>
+              )}
+            </div>
+          )}
+
+          {memberPaiementsSorted.length === 0 ? (
+            <div className="p-8 bg-white rounded-3xl border border-slate-200/80 text-center space-y-3 shadow-xs">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                <Bell className="w-6 h-6" />
+              </div>
+              <h4 className="font-extrabold text-slate-800 text-sm">Aucune notification pour le moment</h4>
+              <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                Lorsque l&apos;administrateur ou le trésorier valide une de vos cotisations, une notification instantanée avec votre reçu apparaîtra ici.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {memberPaiementsSorted.map((p) => {
+                const dateFormatee = new Date(p.date_paiement).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+
+                return (
+                  <div
+                    key={p.id}
+                    className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-3 hover:border-emerald-300 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-extrabold text-xs text-slate-900">
+                            Cotisation Encaissement Validé
+                          </h4>
+                          <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
+                            {dateFormatee}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 flex-shrink-0">
+                        {p.mode_paiement || 'Espèces'}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                      Votre versement de <span className="font-black text-emerald-700">{formatMontant(p.montant, devise)}</span> pour le mois de <span className="font-black text-slate-900">{formatMoisFrancais(p.mois)}</span> a été validé par <span className="font-bold text-slate-900">{p.encaisseur}</span>.
+                    </p>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[11px] font-mono text-slate-400 font-semibold">
+                        N° Réf: {p.reference_recu || p.id.slice(0, 8).toUpperCase()}
+                      </span>
+                      <button
+                        onClick={() => onViewReceipt(p)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs shadow-sm shadow-emerald-600/20 transition-all"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        <span>Voir mon reçu</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

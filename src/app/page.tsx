@@ -29,6 +29,7 @@ import {
   Settings,
   Plus,
   User,
+  Bell,
 } from 'lucide-react';
 
 export default function Home() {
@@ -126,8 +127,8 @@ export default function Home() {
     }
   };
 
-  // Member portal tab state
-  const [memberPortalTab, setMemberPortalTab] = useState<'cotisations' | 'profil'>('cotisations');
+  // Member portal tab state: 'cotisations' | 'notifications' | 'profil'
+  const [memberPortalTab, setMemberPortalTab] = useState<'cotisations' | 'notifications' | 'profil'>('cotisations');
 
   // Loading screen
   if (authLoading) {
@@ -170,10 +171,10 @@ export default function Home() {
 
           {/* Bottom Navigation (Membre) */}
           <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-40 bg-white/98 backdrop-blur-xl border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
-            <div className="flex items-center justify-around px-8 py-2">
+            <div className="flex items-center justify-around px-4 py-2">
               <button
                 onClick={() => setMemberPortalTab('cotisations')}
-                className={`flex flex-col items-center gap-1 py-1 px-5 rounded-2xl transition-all ${
+                className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all ${
                   memberPortalTab === 'cotisations'
                     ? 'text-emerald-600 font-bold'
                     : 'text-slate-400 hover:text-slate-600'
@@ -182,14 +183,30 @@ export default function Home() {
                 <div className={`p-2 rounded-xl transition-colors ${memberPortalTab === 'cotisations' ? 'bg-emerald-50' : ''}`}>
                   <ClipboardList className="w-5 h-5" strokeWidth={memberPortalTab === 'cotisations' ? 2.5 : 2} />
                 </div>
-                <span className={`text-[11px] font-bold ${memberPortalTab === 'cotisations' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className={`text-[10px] font-bold ${memberPortalTab === 'cotisations' ? 'text-emerald-600' : 'text-slate-400'}`}>
                   Cotisations
                 </span>
               </button>
 
               <button
+                onClick={() => setMemberPortalTab('notifications')}
+                className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all ${
+                  memberPortalTab === 'notifications'
+                    ? 'text-emerald-600 font-bold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <div className={`p-2 rounded-xl transition-colors ${memberPortalTab === 'notifications' ? 'bg-emerald-50' : ''}`}>
+                  <Bell className="w-5 h-5" strokeWidth={memberPortalTab === 'notifications' ? 2.5 : 2} />
+                </div>
+                <span className={`text-[10px] font-bold ${memberPortalTab === 'notifications' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  Notifications
+                </span>
+              </button>
+
+              <button
                 onClick={() => setMemberPortalTab('profil')}
-                className={`flex flex-col items-center gap-1 py-1 px-5 rounded-2xl transition-all ${
+                className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all ${
                   memberPortalTab === 'profil'
                     ? 'text-emerald-600 font-bold'
                     : 'text-slate-400 hover:text-slate-600'
@@ -198,7 +215,7 @@ export default function Home() {
                 <div className={`p-2 rounded-xl transition-colors ${memberPortalTab === 'profil' ? 'bg-emerald-50' : ''}`}>
                   <User className="w-5 h-5" strokeWidth={memberPortalTab === 'profil' ? 2.5 : 2} />
                 </div>
-                <span className={`text-[11px] font-bold ${memberPortalTab === 'profil' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className={`text-[10px] font-bold ${memberPortalTab === 'profil' ? 'text-emerald-600' : 'text-slate-400'}`}>
                   Mon Profil
                 </span>
               </button>
