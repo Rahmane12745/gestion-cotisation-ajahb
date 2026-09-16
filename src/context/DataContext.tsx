@@ -390,9 +390,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Ajouter un membre
   const addMembre = async (data: { nom: string; surnom?: string; telephone: string; quartier?: string; photo?: string }) => {
     try {
+      // Trouver le matricule numérique maximum pour éviter tout conflit
+      const maxNumber = membres.reduce((max, m) => {
+        const num = parseInt((m.matricule || '').replace(/[^0-9]/g, ''), 10);
+        return !isNaN(num) && num > max ? num : max;
+      }, 0);
+      const nextNumber = maxNumber + 1;
+      const matricule = `MBR-${String(nextNumber).padStart(4, '0')}`;
+
       if (isSupabaseConfigured() && supabase) {
-        const nextNumber = membres.length + 1;
-        const matricule = `MBR-${String(nextNumber).padStart(4, '0')}`;
         const newMembre = {
           matricule,
           nom: data.nom.trim(),
@@ -403,7 +409,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           actif: true,
         };
         const { data: inserted, error } = await supabase.from('membres').insert([newMembre]).select().single();
-        if (error) return { success: false, error: error.message };
+        if (error) {
+          // En cas de conflit de matricule existant, réessayer sans forcer le matricule
+          // pour laisser la séquence PostgreSQL attribuer automatiquement un matricule unique
+          const fallbackMembre = {
+            nom: data.nom.trim(),
+            surnom: data.surnom?.trim() || null,
+            telephone: data.telephone.trim(),
+            quartier: data.quartier?.trim() || 'Non spécifié',
+            photo: data.photo || null,
+            actif: true,
+          };
+          const { data: insertedFallback, error: fallbackError } = await supabase.from('membres').insert([fallbackMembre]).select().single();
+          if (fallbackError) {
+            return { success: false, error: fallbackError.message };
+          }
+          setMembres((prev) => [...prev, insertedFallback]);
+          return { success: true, membre: insertedFallback };
+        }
         setMembres((prev) => [...prev, inserted]);
         return { success: true, membre: inserted };
       } else {

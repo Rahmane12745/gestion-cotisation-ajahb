@@ -126,6 +126,9 @@ CREATE POLICY "Allow public projets_speciaux" ON public.projets_speciaux FOR ALL
 DROP POLICY IF EXISTS "Allow public cotisations_projets" ON public.cotisations_projets;
 CREATE POLICY "Allow public cotisations_projets" ON public.cotisations_projets FOR ALL USING (true) WITH CHECK (true);
 
+-- Synchronisation de la séquence matricule membre pour éviter tout conflit de clef unique
+SELECT setval('membre_seq', COALESCE((SELECT MAX(CAST(SUBSTRING(matricule FROM 5) AS INTEGER)) FROM public.membres WHERE matricule LIKE 'MBR-%'), 0) + 1, false);
+
 -- ====================================================================
 -- DONNÉES INITIALES DE DÉMARRAGE
 -- ====================================================================
