@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Membre, MembreWithStats, Paiement, Depense } from '@/types';
+import { Membre, MembreWithStats, Paiement, Depense, ProjetSpecial, CotisationProjet } from '@/types';
 import { formatMoisFrancais, formatMontant } from './whatsappUtils';
 
 /**
@@ -673,6 +673,156 @@ export const exporterFicheMembrePDF = (
 
   const dateStr = new Date().toISOString().split('T')[0];
   doc.save(`AJAHB_Fiche_${membre.matricule}_${annee}_${dateStr}.pdf`);
+};
+
+/**
+ * 6. RAPPORT D'UN PROJET SPÉCIAL / COLLECTE (PDF) - AJAHB
+ */
+export const exporterRapportProjetPDF = (
+  projet: ProjetSpecial,
+  cotisationsProjet: CotisationProjet[],
+  membresMap: Map<string, Membre>,
+  nomVillage = 'AJAHB',
+  devise = 'F'
+) => {
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const dateGeneration = new Date().toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const totalCollecte = cotisationsProjet.reduce((sum, c) => sum + Number(c.montant), 0);
+  const obj = Number(projet.objectif_montant || 0);
+  const pct = obj > 0 ? Math.min(100, Math.round((totalCollecte / obj) * 100)) : 0;
+
+  // En-tête officiel
+  doc.setFillColor(5, 150, 105);
+  doc.rect(0, 0, 210, 6, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor(5, 150, 105);
+  doc.text(nomVillage.toUpperCase(), 14, 19);
+
+  doc.setFontSize(9.5);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Registre Officiel des Collectes & Projets Spéciaux', 14, 25);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`BILAN DE COLLECTE : ${projet.titre.toUpperCase()}`, 14, 35);
+
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Rapport édité le ${dateGeneration} | Association ${nomVillage}`, 14, 40);
+
+  // Cadre Résumé Projet
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(14, 44, 182, 28, 2, 2, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Objectif Financier : ${formatMontant(obj, devise)}`, 20, 52);
+
+  doc.setTextColor(5, 150, 105);
+  doc.text(`Total Actuellement Collecté : ${formatMontant(totalCollecte, devise)} (${pct}%)`, 20, 60);
+
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Nombre de Contributeurs : ${cotisationsProjet.length}`, 115, 52);
+
+  if (projet.description) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Description : ${projet.description.slice(0, 55)}`, 115, 60);
+  }
+
+  // Tableau des Contributeurs
+  const tableData = cotisationsProjet.map((c, index) => {
+    const m = membresMap.get(c.membre_id);
+    return [
+      index + 1,
+      m?.nom || 'Membre Donateur',
+      m?.matricule || '-',
+      formatMontant(c.montant, devise),
+      c.mode_paiement || 'Espèces',
+      c.date_paiement ? new Date(c.date_paiement).toLocaleDateString('fr-FR') : '-',
+      c.encaisseur || 'Trésorier',
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 76,
+    margin: { left: 14, right: 14 },
+    tableWidth: 182,
+    head: [['N°', 'Membre Donateur', 'Matricule', 'Montant Versé', 'Mode', 'Date Versement', 'Encaisseur']],
+    body: tableData.length > 0 ? tableData : [['-', 'Aucune contribution enregistrée', '-', '-', '-', '-', '-']],
+    theme: 'grid',
+    styles: {
+      overflow: 'linebreak',
+      cellPadding: 2,
+    },
+    headStyles: {
+      fillColor: [5, 150, 105],
+      textColor: 255,
+      fontSize: 8,
+      fontStyle: 'bold',
+    },
+    bodyStyles: {
+      fontSize: 7.5,
+      textColor: [30, 41, 59],
+    },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 44 },
+      2: { cellWidth: 24 },
+      3: { cellWidth: 28, halign: 'right' },
+      4: { cellWidth: 22 },
+      5: { cellWidth: 26 },
+      6: { cellWidth: 30 },
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    didDrawPage: (data) => {
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text(
+        `${nomVillage} • Bilan Collecte Projet ${projet.titre} • Page ${data.pageNumber} sur ${pageCount}`,
+        14,
+        290
+      );
+    },
+  });
+
+  // Bloc de signature
+  const finalY = (doc as any).lastAutoTable.finalY + 14;
+  if (finalY < 265) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text('Le Trésorier Général', 25, finalY);
+    doc.text('Le Président du Comité', 135, finalY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text('(Signature & Cachet)', 25, finalY + 4);
+    doc.text('(Signature & Cachet)', 135, finalY + 4);
+  }
+
+  const cleanTitle = projet.titre.replace(/[^a-zA-Z0-9]/g, '_');
+  const dateStr = new Date().toISOString().split('T')[0];
+  doc.save(`${nomVillage}_Rapport_Projet_${cleanTitle}_${dateStr}.pdf`);
 };
 
 

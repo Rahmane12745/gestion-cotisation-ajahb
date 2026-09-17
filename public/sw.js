@@ -1,9 +1,4 @@
-const CACHE_NAME = 'cotisations-village-v2';
-const STATIC_ASSETS = [
-  '/',
-  '/manifest.json',
-  '/favicon.ico',
-];
+const CACHE_NAME = 'cotisations-village-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -13,7 +8,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys.map((key) => caches.delete(key))
       );
     })
   );
@@ -23,7 +18,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  // Stratégie Network-First pour toujours avoir la dernière version de Vercel
+  // Network-First: Always fetch latest version from Vercel server when online
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
@@ -34,7 +29,6 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(() => {
-        // En cas d'absence de réseau, utiliser le cache
         return caches.match(event.request).then((cached) => {
           return cached || caches.match('/');
         });
