@@ -106,27 +106,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  useEffect(() => {
-    const checkOfflineCount = () => {
-      try {
-        const raw = localStorage.getItem('ajahb_offline_paiements');
-        if (raw) {
-          const queue = JSON.parse(raw);
-          if (Array.isArray(queue)) setOfflinePendingCount(queue.length);
-        }
-      } catch (e) {}
-    };
-
-    checkOfflineCount();
-
-    const handleOnline = () => {
-      syncOfflineQueue();
-    };
-
-    window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
-  }, []);
-
   const loadProjetsSpeciaux = async () => {
     try {
       if (isSupabaseConfigured() && supabase) {
@@ -166,6 +145,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const checkOfflineCount = () => {
+      try {
+        const raw = localStorage.getItem('ajahb_offline_paiements');
+        if (raw) {
+          const queue = JSON.parse(raw);
+          if (Array.isArray(queue)) setOfflinePendingCount(queue.length);
+        }
+      } catch (e) {}
+    };
+
+    checkOfflineCount();
+    loadData();
+
+    const handleOnline = () => {
+      syncOfflineQueue();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
 
   // Enregistrer un paiement (avec support offline auto)
   const addPaiement = async (data: {
