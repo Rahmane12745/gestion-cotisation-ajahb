@@ -5,7 +5,7 @@ import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import { Membre, Paiement } from '@/types';
 import { formatMoisFrancais, formatMontant } from '@/lib/whatsappUtils';
-import { X, Check, Search, MessageCircle, CreditCard, ChevronRight } from 'lucide-react';
+import { X, Check, Search, Calendar, Sparkles, ChevronRight } from 'lucide-react';
 
 interface WavePaymentModalProps {
   isOpen: boolean;
@@ -31,12 +31,14 @@ export const WavePaymentModal: React.FC<WavePaymentModalProps> = ({
   const [searchMember, setSearchMember] = useState('');
   const [montant, setMontant] = useState<number>(montantCotisation);
   const [modePaiement, setModePaiement] = useState<string>('Espèces');
+  const [isAnnualMode, setIsAnnualMode] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen) {
       setError('');
+      setIsAnnualMode(false);
       setMontant(montantCotisation);
       setModePaiement('Espèces');
       setSearchMember('');
@@ -74,6 +76,15 @@ export const WavePaymentModal: React.FC<WavePaymentModalProps> = ({
     m.matricule.toLowerCase().includes(searchMember.toLowerCase())
   );
 
+  const handleToggleAnnual = (annual: boolean) => {
+    setIsAnnualMode(annual);
+    if (annual) {
+      setMontant(12 * montantCotisation);
+    } else {
+      setMontant(montantCotisation);
+    }
+  };
+
   const handleConfirmPayment = async () => {
     if (!selectedMember) {
       setError('Veuillez choisir un membre.');
@@ -83,31 +94,61 @@ export const WavePaymentModal: React.FC<WavePaymentModalProps> = ({
     setIsSubmitting(true);
     setError('');
 
-    const res = await addPaiement({
-      membre_id: selectedMember.id,
-      mois: targetMonth,
-      montant: Number(montant),
-      encaisseur: currentUser?.nom || 'Trésorier',
-      mode_paiement: modePaiement,
-    });
+    if (isAnnualMode) {
+      // Payment of entire year (12 months)
+      let lastPay: Paiement | null = null;
+      const amountPerMonth = Math.round(Number(montant) / 12) || montantCotisation;
 
-    setIsSubmitting(false);
+      for (const mStr of availableMonths) {
+        const res = await addPaiement({
+          membre_id: selectedMember.id,
+          mois: mStr,
+          montant: amountPerMonth,
+          encaisseur: currentUser?.nom || 'Trésorier',
+          mode_paiement: modePaiement,
+          remarque: `Forfait Annuel ${currentYear}`,
+        });
+        if (res.success && res.paiement) {
+          lastPay = res.paiement;
+        }
+      }
 
-    if (!res.success) {
-      setError(res.error || 'Erreur lors de l\'encaissement.');
-      return;
-    }
+      setIsSubmitting(false);
 
-    if (res.paiement) {
-      onPaymentSuccess(res.paiement);
-      onClose();
+      if (lastPay) {
+        onPaymentSuccess(lastPay);
+        onClose();
+      } else {
+        setError('Erreur lors de l\'enregistrement forfaitaire.');
+      }
+    } else {
+      // Single month payment
+      const res = await addPaiement({
+        membre_id: selectedMember.id,
+        mois: targetMonth,
+        montant: Number(montant),
+        encaisseur: currentUser?.nom || 'Trésorier',
+        mode_paiement: modePaiement,
+      });
+
+      setIsSubmitting(false);
+
+      if (!res.success) {
+        setError(res.error || 'Erreur lors de l\'encaissement.');
+        return;
+      }
+
+      if (res.paiement) {
+        onPaymentSuccess(res.paiement);
+        onClose();
+      }
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header simple style Wave */}
+        {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm">
@@ -115,7 +156,9 @@ export const WavePaymentModal: React.FC<WavePaymentModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-base text-slate-900">Encaisser une cotisation</h3>
-              <p className="text-xs text-slate-500">{formatMoisFrancais(targetMonth)}</p>
+              <p className="text-xs text-slate-500">
+                {isAnnualMode ? `Forfait Annuel ${currentYear} (12 Mois)` : formatMoisFrancais(targetMonth)}
+              </p>
             </div>
           </div>
           <button
@@ -147,7 +190,7 @@ export const WavePaymentModal: React.FC<WavePaymentModalProps> = ({
                   placeholder="Rechercher par nom ou numéro..."
                   value={searchMember}
                   onChange={(e) => setSearchMember(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-slate-100 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-slate-100 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                   autoFocus
                 />
               </div>
@@ -217,40 +260,77 @@ export const WavePaymentModal: React.FC<WavePaymentModalProps> = ({
                 </button>
               </div>
 
-              {/* Month Selector */}
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1">
-                  Mois cotisé :
-                </label>
-                <select
-                  value={targetMonth}
-                  onChange={(e) => setTargetMonth(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-bold focus:ring-2 focus:ring-emerald-500"
+              {/* Mode Selection: Single Month vs 1-Click Annual Payment */}
+              <div className="p-1 bg-slate-100 rounded-2xl flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleToggleAnnual(false)}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                    !isAnnualMode
+                      ? 'bg-white text-emerald-800 shadow-xs border border-slate-200'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
                 >
-                  {availableMonths.map((mStr) => (
-                    <option key={mStr} value={mStr}>
-                      {formatMoisFrancais(mStr)}
-                    </option>
-                  ))}
-                </select>
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>1 Mois Unique</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleAnnual(true)}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                    isAnnualMode
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>🌟 Année Complète (12 Mois)</span>
+                </button>
               </div>
+
+              {/* Month Selector (if not annual) */}
+              {!isAnnualMode ? (
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">
+                    Mois cotisé :
+                  </label>
+                  <select
+                    value={targetMonth}
+                    onChange={(e) => setTargetMonth(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-bold focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {availableMonths.map((mStr) => (
+                      <option key={mStr} value={mStr}>
+                        {formatMoisFrancais(mStr)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="p-3 bg-emerald-50/80 rounded-2xl border border-emerald-200 text-xs font-bold text-emerald-900 leading-relaxed">
+                  ✨ <strong>Forfait Annuel {currentYear}</strong> : Règlement simultané des 12 mois de Janvier à Décembre {currentYear}.
+                </div>
+              )}
 
               {/* Big Wave-like Amount Card */}
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 text-center">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Montant à verser</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  {isAnnualMode ? `Montant Total Annuel (${currentYear})` : 'Montant à verser'}
+                </p>
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <input
                     type="number"
                     value={montant}
                     onChange={(e) => setMontant(Number(e.target.value))}
-                    className="text-3xl font-extrabold text-slate-900 w-36 text-center bg-transparent border-b-2 border-emerald-500 focus:outline-none focus:bg-white rounded px-2"
+                    className="text-3xl font-extrabold text-slate-900 w-44 text-center bg-transparent border-b-2 border-emerald-500 focus:outline-none focus:bg-white rounded px-2"
                   />
                   <span className="text-xl font-bold text-emerald-700">{devise}</span>
                 </div>
 
                 {/* Quick amount presets */}
                 <div className="flex items-center justify-center gap-2 mt-3">
-                  {[1000, 2000, 5000, 10000].map((val) => (
+                  {(isAnnualMode ? [12000, 24000, 36000, 50000] : [1000, 2000, 5000, 10000]).map((val) => (
                     <button
                       key={val}
                       type="button"
@@ -290,14 +370,20 @@ export const WavePaymentModal: React.FC<WavePaymentModalProps> = ({
                 </div>
               </div>
 
-              {/* Big Wave-style Action Button */}
+              {/* Action Button */}
               <button
                 onClick={handleConfirmPayment}
                 disabled={isSubmitting}
                 className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-extrabold text-base shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
               >
                 <Check className="w-5 h-5" />
-                <span>{isSubmitting ? 'Validation...' : `Valider pour ${formatMoisFrancais(targetMonth)}`}</span>
+                <span>
+                  {isSubmitting
+                    ? 'Validation...'
+                    : isAnnualMode
+                    ? `Valider le Forfait Annuel (${formatMontant(montant, devise)})`
+                    : `Valider pour ${formatMoisFrancais(targetMonth)}`}
+                </span>
               </button>
             </div>
           )}

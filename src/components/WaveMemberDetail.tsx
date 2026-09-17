@@ -76,6 +76,24 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
   const totalPaidAmount = monthsDetail.filter((m) => m.isPaid).reduce((sum, m) => sum + (m.payment?.montant || montantCotisation), 0);
   const totalDueAmount = totalLateMonths * montantCotisation;
 
+  // Calcul des arriérés des années précédentes (ex: 2025/2026 si on est en 2027)
+  const currentSelectedYear = parseInt(yearFilter, 10);
+  const prevYearsLateMonths = React.useMemo(() => {
+    const list: string[] = [];
+    const joinYear = membre.date_creation ? parseInt(membre.date_creation.slice(0, 4), 10) : 2025;
+    const startYear = Math.max(2025, joinYear);
+    for (let y = startYear; y < currentSelectedYear; y++) {
+      for (let m = 1; m <= 12; m++) {
+        const monthCode = `${y}-${String(m).padStart(2, '0')}`;
+        const hasPaid = membre.paiements.some((p) => p.mois === monthCode);
+        if (!hasPaid) list.push(monthCode);
+      }
+    }
+    return list;
+  }, [membre, currentSelectedYear]);
+
+  const totalPrevYearsLateAmount = prevYearsLateMonths.length * montantCotisation;
+
   // Modification photo
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -254,6 +272,34 @@ export const WaveMemberDetail: React.FC<WaveMemberDetailProps> = ({
 
         {/* Body Content */}
         <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+          {/* Previous Years Arrears Alert Box if present */}
+          {prevYearsLateMonths.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200/90 rounded-3xl p-4 flex items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-amber-500 text-white shrink-0 shadow-sm">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-amber-900">
+                    ⚠️ Arriérés des années précédentes ({prevYearsLateMonths.length} mois)
+                  </p>
+                  <p className="text-[11px] font-semibold text-amber-700 mt-0.5">
+                    Total dû sur exercices passés : <span className="font-extrabold">{formatMontant(totalPrevYearsLateAmount, devise)}</span>
+                  </p>
+                </div>
+              </div>
+
+              {canCollectPayments && (
+                <button
+                  onClick={() => onOpenPaymentForMonth(membre.id, prevYearsLateMonths[0])}
+                  className="px-3.5 py-2 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md shadow-amber-600/20 shrink-0 transition-all active:scale-95"
+                >
+                  Régler 1er Arriéré
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Active Sanction Alert Box if present */}
           {membre.sanction && (
             <div className="bg-amber-50 border border-amber-200 rounded-3xl p-4 flex items-start gap-3 animate-[popIn_0.3s_ease-out]">
