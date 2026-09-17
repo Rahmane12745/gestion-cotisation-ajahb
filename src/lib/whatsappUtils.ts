@@ -71,6 +71,43 @@ export const genererTexteRecu = (
 };
 
 /**
+ * Génère le texte officiel du reçu de versement pour un Projet Spécial
+ */
+export const genererTexteRecuProjet = (
+  membre: Membre,
+  projetTitre: string,
+  montant: number,
+  modePaiement = 'Espèces',
+  encaisseur = 'Trésorier',
+  devise = 'F',
+  nomVillage = 'AJAHB'
+): string => {
+  const dateFormatted = new Date().toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return (
+    `*===============================*\n` +
+    `🏛️ *${nomVillage.toUpperCase()}*\n` +
+    `*REÇU DE CONTRIBUTION PROJET*\n` +
+    `*===============================*\n\n` +
+    `🎯 *Projet :* ${projetTitre}\n` +
+    `👤 *Donateur :* ${membre.nom}\n` +
+    `🆔 *Matricule :* ${membre.matricule}\n` +
+    `📞 *Téléphone :* ${membre.telephone}\n\n` +
+    `💰 *Montant versé :* ${formatMontant(montant, devise)}\n` +
+    `💳 *Mode de paiement :* ${modePaiement}\n` +
+    `⏰ *Date & Heure :* ${dateFormatted}\n` +
+    `✍️ *Encaissé par :* ${encaisseur}\n\n` +
+    `✅ *Statut :* Contribution validée. Merci pour votre soutien au projet !`
+  );
+};
+
+/**
  * Génère un message de rappel bienveillant pour un membre en retard
  */
 export const genererTexteRappel = (

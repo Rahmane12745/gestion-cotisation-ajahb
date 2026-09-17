@@ -3,9 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import { formatMontant } from '@/lib/whatsappUtils';
+import { formatMontant, genererTexteRecuProjet, partagerSurWhatsApp } from '@/lib/whatsappUtils';
 import { exporterRapportProjetPDF } from '@/lib/exportUtils';
-import { Target, Plus, HeartHandshake, FileText, Users, ChevronDown, ChevronUp, UserCheck } from 'lucide-react';
+import { Target, Plus, HeartHandshake, FileText, Users, ChevronDown, ChevronUp, UserCheck, MessageSquare } from 'lucide-react';
 
 interface ProjetsSpeciauxModalProps {
   isOpen: boolean;
@@ -70,22 +70,55 @@ export const ProjetsSpeciauxModal: React.FC<ProjetsSpeciauxModalProps> = ({
     if (!selectedProjetId || !selectedMembreId || !montantVersement) return;
 
     setIsSubmitting(true);
+    const mNum = Number(montantVersement);
     const res = await addCotisationProjet({
       projet_id: selectedProjetId,
       membre_id: selectedMembreId,
-      montant: Number(montantVersement),
+      montant: mNum,
       encaisseur: currentUser?.nom || 'Trésorier',
       mode_paiement: modePaiement,
     });
     setIsSubmitting(false);
 
     if (res.success) {
+      const donateur = membres.find((m) => m.id === selectedMembreId);
+      const proj = projetsSpeciaux.find((p) => p.id === selectedProjetId);
+
+      if (donateur && proj) {
+        const textRecu = genererTexteRecuProjet(
+          donateur,
+          proj.titre,
+          mNum,
+          modePaiement,
+          currentUser?.nom || 'Trésorier',
+          devise,
+          nomVillage
+        );
+        partagerSurWhatsApp(textRecu, donateur.telephone, `Reçu Don - ${proj.titre}`);
+      }
+
       setSelectedProjetId(null);
       setSelectedMembreId('');
       setMontantVersement('');
     } else {
       alert(res.error || 'Erreur versement');
     }
+  };
+
+  const handleSendWhatsAppReceipt = (c: typeof cotisationsProjets[0], projTitre: string) => {
+    const donateur = membresMap.get(c.membre_id);
+    if (!donateur) return;
+
+    const textRecu = genererTexteRecuProjet(
+      donateur,
+      projTitre,
+      Number(c.montant),
+      c.mode_paiement || 'Espèces',
+      c.encaisseur || 'Trésorier',
+      devise,
+      nomVillage
+    );
+    partagerSurWhatsApp(textRecu, donateur.telephone, `Reçu Don - ${projTitre}`);
   };
 
   const handleExportPDF = (proj: typeof projetsSpeciaux[0], projCotisations: typeof cotisationsProjets) => {
@@ -334,7 +367,7 @@ export const ProjetsSpeciauxModal: React.FC<ProjetsSpeciauxModalProps> = ({
                               disabled={isSubmitting}
                               className="px-4 py-1.5 rounded-xl bg-emerald-600 text-white font-black text-xs shadow-md hover:bg-emerald-700 transition-all disabled:opacity-50"
                             >
-                              {isSubmitting ? 'Validation...' : 'Valider'}
+                              {isSubmitting ? 'Validation...' : 'Valider & Reçu WhatsApp'}
                             </button>
                           </div>
                         </div>
@@ -386,13 +419,23 @@ export const ProjetsSpeciauxModal: React.FC<ProjetsSpeciauxModalProps> = ({
                                     </div>
                                   </div>
 
-                                  <div className="text-right flex-shrink-0">
-                                    <span className="text-xs font-black text-emerald-600 block">
-                                      +{formatMontant(c.montant, devise)}
-                                    </span>
-                                    <span className="text-[9px] text-slate-400 font-medium">
-                                      Par {c.encaisseur || 'Trésorier'}
-                                    </span>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <div className="text-right">
+                                      <span className="text-xs font-black text-emerald-600 block">
+                                        +{formatMontant(c.montant, devise)}
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-medium">
+                                        Par {c.encaisseur || 'Trésorier'}
+                                      </span>
+                                    </div>
+
+                                    <button
+                                      onClick={() => handleSendWhatsAppReceipt(c, proj.titre)}
+                                      className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-all active:scale-95"
+                                      title="Envoyer le reçu du don sur WhatsApp"
+                                    >
+                                      <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                                    </button>
                                   </div>
                                 </div>
                               );
