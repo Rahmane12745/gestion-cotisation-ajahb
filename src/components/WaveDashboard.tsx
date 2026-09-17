@@ -98,12 +98,28 @@ export const WaveDashboard: React.FC<WaveDashboardProps> = ({
         <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Card Header: Month Tag */}
+        {/* Card Header: Month Tag & Year Selector */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-100 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
             {formatMoisFrancais(selectedMonth)}
           </span>
+
+          {/* Year Selector Dropdown */}
+          <select
+            value={currentYear}
+            onChange={(e) => {
+              const newYear = e.target.value;
+              const currentMonthNum = selectedMonth.split('-')[1] || '01';
+              setSelectedMonth(`${newYear}-${currentMonthNum}`);
+            }}
+            className="bg-emerald-950/40 text-emerald-100 text-xs font-black px-2.5 py-1 rounded-xl border border-emerald-400/30 focus:outline-none cursor-pointer"
+          >
+            <option value="2025" className="bg-slate-900 text-white">Année 2025</option>
+            <option value="2026" className="bg-slate-900 text-white">Année 2026</option>
+            <option value="2027" className="bg-slate-900 text-white">Année 2027</option>
+            <option value="2028" className="bg-slate-900 text-white">Année 2028</option>
+          </select>
         </div>
 
         {/* Balance Amount with Show/Hide toggle */}
