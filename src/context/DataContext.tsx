@@ -41,6 +41,7 @@ interface DataContextType {
   }) => Promise<{ success: boolean; depense?: Depense; error?: string }>;
   deleteDepense: (id: string) => Promise<{ success: boolean; error?: string }>;
   addProjetSpecial: (data: { titre: string; description?: string; objectif_montant: number }) => Promise<{ success: boolean; error?: string }>;
+  deleteProjetSpecial: (id: string) => Promise<{ success: boolean; error?: string }>;
   addCotisationProjet: (data: { projet_id: string; membre_id: string; montant: number; encaisseur: string; mode_paiement?: string }) => Promise<{ success: boolean; error?: string }>;
   getPaiementsForMembre: (membreId: string) => Paiement[];
   getMembreById: (id: string) => Membre | undefined;
@@ -265,6 +266,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (err) {
       return { success: false, error: 'Erreur lors de la création du projet' };
+    }
+  };
+
+  // Supprimer un projet spécial / collecte
+  const deleteProjetSpecial = async (id: string) => {
+    try {
+      if (isSupabaseConfigured() && supabase) {
+        // Supprimer d'abord les cotisations associées au projet
+        await supabase.from('cotisations_projets').delete().eq('projet_id', id);
+        // Supprimer le projet
+        const { error } = await supabase.from('projets_speciaux').delete().eq('id', id);
+        if (error) return { success: false, error: error.message };
+        await loadProjetsSpeciaux();
+        return { success: true };
+      } else {
+        setCotisationsProjets((prev) => prev.filter((c) => c.projet_id !== id));
+        setProjetsSpeciaux((prev) => prev.filter((p) => p.id !== id));
+        return { success: true };
+      }
+    } catch (err) {
+      return { success: false, error: 'Erreur lors de la suppression de la collecte' };
     }
   };
 
@@ -612,6 +634,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addDepense,
         deleteDepense,
         addProjetSpecial,
+        deleteProjetSpecial,
         addCotisationProjet,
         getPaiementsForMembre,
         getMembreById,

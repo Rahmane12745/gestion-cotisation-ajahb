@@ -5,7 +5,7 @@ import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatMontant, genererTexteRecuProjet, partagerSurWhatsApp } from '@/lib/whatsappUtils';
 import { exporterRapportProjetPDF } from '@/lib/exportUtils';
-import { Target, Plus, HeartHandshake, FileText, Users, ChevronDown, ChevronUp, UserCheck, MessageSquare } from 'lucide-react';
+import { Target, Plus, HeartHandshake, FileText, Users, ChevronDown, ChevronUp, UserCheck, MessageSquare, Trash2 } from 'lucide-react';
 
 interface ProjetsSpeciauxModalProps {
   isOpen: boolean;
@@ -16,7 +16,7 @@ export const ProjetsSpeciauxModal: React.FC<ProjetsSpeciauxModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { projetsSpeciaux, cotisationsProjets, addProjetSpecial, addCotisationProjet, membres, devise, nomVillage } = useData();
+  const { projetsSpeciaux, cotisationsProjets, addProjetSpecial, deleteProjetSpecial, addCotisationProjet, membres, devise, nomVillage } = useData();
   const { canCollectPayments, isAdmin, currentUser } = useAuth();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -123,6 +123,15 @@ export const ProjetsSpeciauxModal: React.FC<ProjetsSpeciauxModalProps> = ({
 
   const handleExportPDF = (proj: typeof projetsSpeciaux[0], projCotisations: typeof cotisationsProjets) => {
     exporterRapportProjetPDF(proj, projCotisations, membresMap, nomVillage, devise);
+  };
+
+  const handleDeleteProjet = async (proj: typeof projetsSpeciaux[0]) => {
+    if (window.confirm(`Voulez-vous vraiment SUPPRIMER le projet de collecte "${proj.titre}" ? Cette action est irréversible.`)) {
+      const res = await deleteProjetSpecial(proj.id);
+      if (!res.success) {
+        alert(res.error || 'Erreur lors de la suppression.');
+      }
+    }
   };
 
   return (
@@ -241,9 +250,20 @@ export const ProjetsSpeciauxModal: React.FC<ProjetsSpeciauxModalProps> = ({
                           <h4 className="font-black text-sm text-slate-900">{proj.titre}</h4>
                           {proj.description && <p className="text-xs text-slate-500 font-medium mt-0.5">{proj.description}</p>}
                         </div>
-                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0 border border-emerald-200">
-                          {pct}% réalisé
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            {pct}% réalisé
+                          </span>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteProjet(proj)}
+                              className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 transition-all active:scale-95"
+                              title="Supprimer cette collecte"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Progress Bar */}
